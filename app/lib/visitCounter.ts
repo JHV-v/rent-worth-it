@@ -1,5 +1,5 @@
 // 访问计数：基于 localStorage 的本地真实计数（仅当前浏览器/设备）。
-// 同时支持 Vercel KV 远程计数，远程不可用时回退到 localStorage。
+// 同时支持远程 Redis 计数（通过 /api/visit-count），远程不可用时回退到 localStorage。
 // 每次页面加载调用 incrementVisit() 一次，返回最新的 { today, total }。
 
 const TOTAL_KEY = 'rent-visit-total'
@@ -61,7 +61,7 @@ export function incrementVisit(): VisitStats {
   return { today: todayCount, total }
 }
 
-// ---- 远程计数（Vercel KV） ----
+// ---- 远程计数（Redis via /api/visit-count） ----
 
 export async function incrementVisitRemote(): Promise<VisitStats> {
   try {
@@ -79,10 +79,10 @@ export async function getVisitStatsRemote(): Promise<VisitStats> {
   try {
     const res = await fetch('/api/visit-count', { method: 'GET' })
     if (!res.ok) return getVisitStatsLocal()
-    const data: VisitStats = await res.json()
-    // If KV returned zeros because it's not configured, fall back to local
-    if (data.total === 0 && data.today === 0) return getVisitStatsLocal()
-    return data
+    const data: VisitStats & { fallback?: boolean } = await res.json()
+    // 远程未配置或失败时回退到本地
+    if (data.fallback) return getVisitStatsLocal()
+    return { today: data.today, total: data.total }
   } catch {
     return getVisitStatsLocal()
   }

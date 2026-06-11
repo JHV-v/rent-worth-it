@@ -1,5 +1,8 @@
-import { kv } from '@vercel/kv'
 import { NextResponse } from 'next/server'
+import { getRedis } from '../../lib/redis'
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 const TOTAL_KEY = 'visit:total'
 const TODAY_KEY = 'visit:today'
@@ -12,44 +15,41 @@ function getTodayDate(): string {
   return `${yyyy}-${mm}-${dd}`
 }
 
-function isKvConfigured(): boolean {
-  // If @vercel/kv is not configured, kv operations will throw.
-  // We check lazily on first use.
-  return true
-}
-
 export async function GET() {
+  const redis = getRedis()
+  if (!redis) {
+    return NextResponse.json({ today: 0, total: 0, fallback: true })
+  }
+
   try {
     const todayDate = getTodayDate()
-
-    const [total, todayCount] = await Promise.all([
-      kv.get<number>(TOTAL_KEY),
-      kv.hget<number>(TODAY_KEY, todayDate),
+    const [totalRaw, todayRaw] = await Promise.all([
+      redis.get(TOTAL_KEY),
+      redis.hget(TODAY_KEY, todayDate),
     ])
-
     return NextResponse.json({
-      today: typeof todayCount === 'number' ? todayCount : 0,
-      total: typeof total === 'number' ? total : 0,
+      today: Number(todayRaw) || 0,
+      total: Number(totalRaw) || 0,
     })
   } catch {
-    // Vercel KV not configured or unavailable
-    return NextResponse.json({ today: 0, total: 0 })
+    return NextResponse.json({ today: 0, total: 0, fallback: true })
   }
 }
 
 export async function POST() {
+  const redis = getRedis()
+  if (!redis) {
+    return NextResponse.json({ today: 0, total: 0, fallback: true })
+  }
+
   try {
     const todayDate = getTodayDate()
-
-    // Increment total count (atomic)
-    const total = await kv.incr(TOTAL_KEY)
-
-    // Increment today's count in hash (atomic)
-    const todayCount = await kv.hincrby(TODAY_KEY, todayDate, 1)
-
+    const [total, todayCount] = await Promise.all([
+      redis.incr(TOTAL_KEY),
+      redis.hincrby(TODAY_KEY, todayDate, 1),
+    ])
     return NextResponse.json({ today: todayCount, total })
   } catch {
-    // Vercel KV not configured or unavailable
     return NextResponse.json({ today: 0, total: 0, fallback: true })
   }
 }

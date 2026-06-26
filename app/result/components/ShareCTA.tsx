@@ -5,10 +5,12 @@ import { useState } from 'react'
 interface ShareCTAProps {
   onRestart: () => void
   onBack: () => void
+  onShareImage: () => Promise<void>
 }
 
-export default function ShareCTA({ onRestart, onBack }: ShareCTAProps) {
+export default function ShareCTA({ onRestart, onBack, onShareImage }: ShareCTAProps) {
   const [copied, setCopied] = useState(false)
+  const [sharing, setSharing] = useState(false)
 
   const handleCopy = async () => {
     try {
@@ -20,17 +22,35 @@ export default function ShareCTA({ onRestart, onBack }: ShareCTAProps) {
     }
   }
 
+  const handleShare = async () => {
+    setSharing(true)
+    try {
+      await onShareImage()
+    } finally {
+      setSharing(false)
+    }
+  }
+
   return (
     <div className="space-y-stack-md pt-stack-md pb-stack-lg">
       <button
         type="button"
-        onClick={onRestart}
-        className="w-full premium-btn py-5 rounded-full text-white font-headline-sm shadow-md active:scale-[0.98] flex items-center justify-center gap-stack-md"
+        onClick={handleShare}
+        disabled={sharing}
+        className="w-full premium-btn py-5 rounded-full text-white font-headline-sm shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 flex items-center justify-center gap-stack-md"
       >
-        <span className="material-symbols-outlined fill-1">refresh</span>
-        重新测评
+        <span className="material-symbols-outlined fill-1">ios_share</span>
+        {sharing ? '正在生成分享图...' : '生成分享图'}
       </button>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
+        <button
+          type="button"
+          onClick={onRestart}
+          className="flex items-center justify-center gap-2 bg-white border border-outline-variant/30 py-4 rounded-full text-on-surface font-label-md hover:bg-surface-container-low transition-all soft-shadow"
+        >
+          <span className="material-symbols-outlined text-primary">refresh</span>
+          重新测评
+        </button>
         <button
           type="button"
           onClick={handleCopy}

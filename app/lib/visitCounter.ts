@@ -2,20 +2,14 @@
 // 同时支持远程 Redis 计数（通过 /api/visit-count），远程不可用时回退到 localStorage。
 // 每次页面加载调用 incrementVisit() 一次，返回最新的 { today, total }。
 
+import { getTodayDateString } from './dateUtils'
+
 const TOTAL_KEY = 'rent-visit-total'
 const TODAY_KEY = 'rent-visit-today' // 存 { date: 'YYYY-MM-DD', count: number }
 
 type TodayBucket = {
   date: string
   count: number
-}
-
-function getTodayKey(): string {
-  const now = new Date()
-  const yyyy = now.getFullYear()
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
 }
 
 function safeRead<T>(key: string): T | null {
@@ -52,7 +46,7 @@ export function incrementVisit(): VisitStats {
   safeWrite(TOTAL_KEY, total)
 
   // 今日访问：跨日重置
-  const todayKey = getTodayKey()
+  const todayKey = getTodayDateString()
   const todayBucket = safeRead<TodayBucket>(TODAY_KEY)
   const isSameDay = todayBucket?.date === todayKey
   const todayCount = (isSameDay ? todayBucket.count : 0) + 1
@@ -92,7 +86,7 @@ function getVisitStatsLocal(): VisitStats {
   if (typeof window === 'undefined') return { today: 0, total: 0 }
   const totalRaw = safeRead<number>(TOTAL_KEY)
   const total = typeof totalRaw === 'number' && Number.isFinite(totalRaw) ? totalRaw : 0
-  const todayKey = getTodayKey()
+  const todayKey = getTodayDateString()
   const todayBucket = safeRead<TodayBucket>(TODAY_KEY)
   const todayCount = todayBucket?.date === todayKey ? todayBucket.count : 0
   return { today: todayCount, total }

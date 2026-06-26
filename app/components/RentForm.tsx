@@ -264,23 +264,7 @@ export default function RentForm({ initialData, onSubmit }: RentFormProps) {
         <div className="h-px bg-stone-100" />
 
         {/* 提交按钮 */}
-        <div className="p-8 bg-stone-50/80 border-t border-stone-100 space-y-6">
-          <div className="flex justify-between items-center gap-4">
-            <div className="flex-1 text-center">
-              <div className="text-[10px] uppercase tracking-wider text-stone-400 font-bold mb-1">日均房租</div>
-              <div className="text-lg font-bold text-primary">￥0.00</div>
-            </div>
-            <div className="w-px h-10 bg-stone-200" />
-            <div className="flex-1 text-center">
-              <div className="text-[10px] uppercase tracking-wider text-stone-400 font-bold mb-1">月通勤</div>
-              <div className="text-lg font-bold text-primary">0h</div>
-            </div>
-            <div className="w-px h-10 bg-stone-200" />
-            <div className="flex-1 text-center">
-              <div className="text-[10px] uppercase tracking-wider text-stone-400 font-bold mb-1">性价比</div>
-              <div className="text-lg font-bold text-error">0.00</div>
-            </div>
-          </div>
+        <div className="p-8 bg-stone-50/80 border-t border-stone-100">
           <button
             type="button"
             onClick={handleSubmit}

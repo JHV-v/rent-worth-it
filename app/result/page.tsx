@@ -1,8 +1,9 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import QRCode from 'qrcode'
 import { mapFormDataToScoreInput, type RentFormData } from '../lib/adapter'
 import { calculateScore, type ScoreResult, type RawScoreInput } from '../lib/score'
 import { loadRentFormData } from '../lib/storage'
@@ -12,12 +13,15 @@ import ProsConsSection from './components/ProsConsSection'
 import AIRoastSection from './components/AIRoastSection'
 import RecommendationsSection from './components/RecommendationsSection'
 import ShareCTA from './components/ShareCTA'
+import SharePoster from './components/SharePoster'
 import ResultFooter from './components/ResultFooter'
 
 function ResultContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const sharePosterRef = useRef<HTMLDivElement>(null)
   const [formData, setFormData] = useState<RentFormData | null>(null)
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
 
   useEffect(() => {
     const t = searchParams.get('t')
@@ -28,6 +32,18 @@ function ResultContent() {
       router.replace('/')
     }
   }, [searchParams, router])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    QRCode.toDataURL(window.location.origin, {
+      width: 192,
+      margin: 1,
+      color: { dark: '#111827', light: '#ffffff' },
+    })
+      .then(setQrCodeUrl)
+      .catch(() => setQrCodeUrl(''))
+  }, [])
 
   const score: ScoreResult | null = useMemo(() => {
     if (!formData) return null
@@ -71,6 +87,47 @@ function ResultContent() {
   const handleRestart = () => router.push('/')
   const handleBack = () => router.push('/')
 
+  const downloadBlob = (blob: Blob) => {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `rent-score-${score.totalScore}.png`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleShareImage = async () => {
+    const node = sharePosterRef.current
+    if (!node) return
+
+    const { default: html2canvas } = await import('html2canvas')
+    const canvas = await html2canvas(node, {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    })
+
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 0.95))
+    if (!blob) return
+
+    const file = new File([blob], `rent-score-${score.totalScore}.png`, { type: 'image/png' })
+    const shareData = {
+      title: '我的租房性价比报告',
+      text: `我的租房性价比 ${score.totalScore} 分，${score.persona}。你也来测测这房租得值不值。`,
+      files: [file],
+    }
+
+    if (navigator.canShare?.(shareData)) {
+      await navigator.share(shareData)
+      return
+    }
+
+    downloadBlob(blob)
+  }
+
   return (
     <div className="min-h-screen bg-surface text-on-surface selection:bg-primary-fixed-dim">
       <button
@@ -103,7 +160,12 @@ function ResultContent() {
           <ProsConsSection score={score} input={rawInput} />
           <AIRoastSection score={score} input={rawInput} />
           <RecommendationsSection score={score} />
-          <ShareCTA onRestart={handleRestart} onBack={handleBack} />
+          <div className="fixed left-[-9999px] top-0 pointer-events-none" aria-hidden="true">
+            <div ref={sharePosterRef}>
+              <SharePoster score={score} input={rawInput} qrCodeUrl={qrCodeUrl} />
+            </div>
+          </div>
+          <ShareCTA onRestart={handleRestart} onBack={handleBack} onShareImage={handleShareImage} />
         </div>
       </main>
 

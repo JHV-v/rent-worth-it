@@ -28,7 +28,7 @@ export default function HeaderSection() {
         </p>
       </div>
       <div className="flex items-center justify-center gap-3 flex-wrap">
-        <span className="bg-stone-100 text-stone-600 text-xs px-2.5 py-1 rounded-full font-medium">v1.1.0</span>
+        <span className="bg-stone-100 text-stone-600 text-xs px-2.5 py-1 rounded-full font-medium">v1.1.1</span>
         <a
           className="hover:text-primary transition-colors flex items-center gap-0.5"
           href="https://github.com/JHV-v/RentHouse--ver1.0.1"

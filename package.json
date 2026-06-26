@@ -13,7 +13,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "version": "node scripts/sync-version.mjs && git add app/components/HeaderSection.tsx",
+    "release:patch": "npm version patch -m \"release: v%s\"",
+    "release:minor": "npm version minor -m \"release: v%s\"",
+    "release:major": "npm version major -m \"release: v%s\""
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

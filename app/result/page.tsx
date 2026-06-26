@@ -134,13 +134,13 @@ function ResultContent() {
         type="button"
         onClick={handleBack}
         aria-label="返回输入页修改"
-        className="fixed left-4 top-4 z-[100] flex items-center gap-1.5 rounded-full border border-outline-variant/30 bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-lg shadow-primary/30 transition-all hover:brightness-110 hover:shadow-xl active:scale-95"
+        className="fixed left-3 top-3 sm:left-4 sm:top-4 z-[100] flex items-center gap-1.5 rounded-full border border-outline-variant/30 bg-primary px-3 py-2 sm:px-4 text-xs sm:text-sm font-semibold text-on-primary shadow-lg shadow-primary/30 transition-all hover:brightness-110 hover:shadow-xl active:scale-95"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="m12 19-7-7 7-7" />
           <path d="M19 12H5" />
         </svg>
-        返回修改
+        <span className="hidden sm:inline">返回修改</span>
       </button>
 
       <header className="bg-white/70 backdrop-blur-xl border-b border-outline-variant/30 fixed w-full top-0 z-50">

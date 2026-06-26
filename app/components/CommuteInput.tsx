@@ -6,6 +6,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -84,27 +85,34 @@ function SortableItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`draggable-item flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant/30 transition-all ${
+      className={`draggable-item flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-surface-container-low rounded-xl border border-outline-variant/30 transition-all ${
         isDragging ? 'scale-[1.02]' : ''
       }`}
     >
-      <button type="button" className="cursor-grab active:cursor-grabbing text-on-surface-variant" {...attributes} {...listeners}>
+      <button
+        type="button"
+        aria-label="拖动排序"
+        className="cursor-grab active:cursor-grabbing text-on-surface-variant touch-none p-1 -m-1"
+        {...attributes}
+        {...listeners}
+      >
         <span className="material-symbols-outlined">drag_indicator</span>
       </button>
       <span className={`material-symbols-outlined text-primary`}>{COMMUTE_ICONS[item.label]}</span>
-      <span className="font-label-md text-label-md text-on-surface min-w-[60px]">{item.label}</span>
-      <div className="flex-1 flex items-center gap-1">
+      <span className="font-label-md text-label-md text-on-surface min-w-[48px] sm:min-w-[60px]">{item.label}</span>
+      <div className="flex-1 flex items-center gap-1 justify-end sm:justify-start">
         <input
           type="number"
+          inputMode="numeric"
           value={item.minutes}
           onChange={(e) => onMinutesChange(item.id, e.target.value)}
           placeholder="0"
-          className="w-20 px-3 py-2 rounded-lg border border-outline-variant/50 bg-white text-on-surface text-center font-body-md focus:outline-none"
+          className="w-16 sm:w-20 px-2 sm:px-3 py-2 rounded-lg border border-outline-variant/50 bg-white text-on-surface text-center font-body-md focus:outline-none"
         />
         <span className="text-on-surface-variant text-sm">min</span>
       </div>
       {comment && (
-        <span className="text-xs text-on-surface-variant max-w-[120px] truncate">{comment}</span>
+        <span className="hidden sm:inline text-xs text-on-surface-variant max-w-[120px] truncate">{comment}</span>
       )}
     </div>
   )
@@ -122,7 +130,8 @@ export default function CommuteInput({ times, order, onTimesChange, onOrderChang
   }))
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 

@@ -42,29 +42,29 @@ export default function ShareCTA({ onRestart, onBack, onShareImage }: ShareCTAPr
         <span className="material-symbols-outlined fill-1">ios_share</span>
         {sharing ? '正在生成分享图...' : '生成分享图'}
       </button>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <button
           type="button"
           onClick={onRestart}
-          className="flex items-center justify-center gap-2 bg-white border border-outline-variant/30 py-4 rounded-full text-on-surface font-label-md hover:bg-surface-container-low transition-all soft-shadow"
+          className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 bg-white border border-outline-variant/30 py-3 sm:py-4 rounded-2xl sm:rounded-full text-on-surface text-xs sm:text-base font-label-md hover:bg-surface-container-low transition-all soft-shadow"
         >
-          <span className="material-symbols-outlined text-primary">refresh</span>
+          <span className="material-symbols-outlined text-primary text-xl sm:text-2xl">refresh</span>
           重新测评
         </button>
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center justify-center gap-2 bg-white border border-outline-variant/30 py-4 rounded-full text-on-surface font-label-md hover:bg-surface-container-low transition-all soft-shadow"
+          className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 bg-white border border-outline-variant/30 py-3 sm:py-4 rounded-2xl sm:rounded-full text-on-surface text-xs sm:text-base font-label-md hover:bg-surface-container-low transition-all soft-shadow"
         >
-          <span className="material-symbols-outlined text-primary">link</span>
+          <span className="material-symbols-outlined text-primary text-xl sm:text-2xl">link</span>
           {copied ? '已复制!' : '复制链接'}
         </button>
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center justify-center gap-2 bg-white border border-outline-variant/30 py-4 rounded-full text-on-surface font-label-md hover:bg-surface-container-low transition-all soft-shadow"
+          className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 bg-white border border-outline-variant/30 py-3 sm:py-4 rounded-2xl sm:rounded-full text-on-surface text-xs sm:text-base font-label-md hover:bg-surface-container-low transition-all soft-shadow"
         >
-          <span className="material-symbols-outlined text-primary">edit</span>
+          <span className="material-symbols-outlined text-primary text-xl sm:text-2xl">edit</span>
           重新填写
         </button>
       </div>

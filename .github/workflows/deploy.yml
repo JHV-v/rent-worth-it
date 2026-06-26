@@ -10,6 +10,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: 触发 Gitee 强制同步（如果配置了 Gitee Token）
+        if: env.GITEE_TOKEN != ''
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_OWNER: ${{ secrets.GITEE_OWNER }}
+          GITEE_REPO: ${{ secrets.GITEE_REPO }}
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"access_token\":\"$GITEE_TOKEN\",\"force\":true}" \
+            "https://gitee.com/api/v5/repos/$GITEE_OWNER/$GITEE_REPO/force_sync_pull"
+          # 等待 Gitee 同步完成
+          sleep 30
+
       - name: SSH 到京东云服务器并执行部署
         uses: appleboy/ssh-action@v1.0.3
         with:

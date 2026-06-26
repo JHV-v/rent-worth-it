@@ -1,0 +1,28 @@
+name: Deploy to JD Cloud
+
+# 触发条件：push 到 main 分支
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 也支持手动触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH 到京东云服务器并执行部署
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.JD_HOST }}
+          username: ${{ secrets.JD_USER }}
+          key: ${{ secrets.JD_SSH_KEY }}
+          port: ${{ secrets.JD_PORT }}
+          script: |
+            cd /var/www/rent-app
+            git fetch --all --tags
+            git pull --ff-only
+            npm install --no-audit --no-fund
+            npm run build
+            pm2 restart rent-app --update-env
+            pm2 status
+            echo "✅ 部署完成，当前版本：$(node -p "require('./package.json').version")"

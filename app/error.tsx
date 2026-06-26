@@ -10,7 +10,9 @@ export default function GlobalError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('[App Error]', error)
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[App Error]', error)
+    }
   }, [error])
 
   return (

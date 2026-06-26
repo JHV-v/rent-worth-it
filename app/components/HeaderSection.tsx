@@ -1,20 +1,69 @@
 'use client'
 
 import { incrementVisit, incrementVisitRemote, formatCount } from '../lib/visitCounter'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+const SESSION_FLAG = '__visit_counted'
 
 export default function HeaderSection() {
   const [stats, setStats] = useState<{ today: number; total: number } | null>(null)
+  // 防止 React StrictMode 在开发环境下重复执行 effect
+  const didRunRef = useRef(false)
 
   useEffect(() => {
-    const local = incrementVisit()
-    setStats(local)
+    if (didRunRef.current) return
+    didRunRef.current = true
 
-    incrementVisitRemote().then((remote) => {
-      if (remote.total > 0 || remote.today > 0) {
-        setStats(remote)
+    // session 内去重：避免单次会话内多次刷新页面都计数
+    let alreadyCounted = false
+    try {
+      alreadyCounted = typeof window !== 'undefined' && window.sessionStorage.getItem(SESSION_FLAG) === '1'
+    } catch {
+      // ignore
+    }
+
+    if (alreadyCounted) {
+      // 已计过：只展示当前本地缓存值，不再 +1
+      setStats({ today: 0, total: 0 })
+    } else {
+      const local = incrementVisit()
+      setStats(local)
+      try {
+        window.sessionStorage.setItem(SESSION_FLAG, '1')
+      } catch {
+        // ignore
       }
-    })
+    }
+
+    const controller = new AbortController()
+    const { signal } = controller
+
+    ;(async () => {
+      // 只有未在本 session 内计过数时才请求远程 +1，否则改成 GET 拉取
+      if (alreadyCounted) {
+        try {
+          const res = await fetch('/api/visit-count', { method: 'GET', signal })
+          if (!res.ok) return
+          const data: { today: number; total: number; fallback?: boolean } = await res.json()
+          if (signal.aborted) return
+          if (!data.fallback && (data.total > 0 || data.today > 0)) setStats(data)
+        } catch {
+          // 静默
+        }
+        return
+      }
+      try {
+        const remote = await incrementVisitRemote()
+        if (signal.aborted) return
+        if (remote.total > 0 || remote.today > 0) setStats(remote)
+      } catch {
+        // 静默
+      }
+    })()
+
+    return () => {
+      controller.abort()
+    }
   }, [])
 
   return (
@@ -36,15 +85,6 @@ export default function HeaderSection() {
           rel="noopener noreferrer"
         >
           <span className="material-symbols-outlined text-sm">code</span> GitHub
-        </a>
-        <a className="hover:text-primary transition-colors flex items-center gap-0.5" href="#">
-          <span className="material-symbols-outlined text-sm">explore</span> 小红书
-        </a>
-        <a className="hover:text-primary transition-colors flex items-center gap-0.5" href="#">
-          <span className="material-symbols-outlined text-sm">play_circle</span> 抖音
-        </a>
-        <a className="hover:text-primary transition-colors flex items-center gap-0.5" href="#">
-          <span className="material-symbols-outlined text-sm">movie</span> bilibili
         </a>
       </div>
       <div className="flex items-center justify-center gap-4 text-sm text-on-surface-variant">

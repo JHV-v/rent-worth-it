@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -72,13 +72,14 @@ function SortableItem({
   onMinutesChange: (id: string, value: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+  const inputId = useId()
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   }
 
-  const minutes = parseInt(item.minutes) || 0
+  const minutes = parseInt(item.minutes, 10) || 0
   const comment = minutes > 0 ? getCommuteComment(minutes) : ''
 
   return (
@@ -99,11 +100,18 @@ function SortableItem({
         <span className="material-symbols-outlined">drag_indicator</span>
       </button>
       <span className={`material-symbols-outlined text-primary`}>{COMMUTE_ICONS[item.label]}</span>
-      <span className="font-label-md text-label-md text-on-surface min-w-[48px] sm:min-w-[60px]">{item.label}</span>
+      <label htmlFor={inputId} className="font-label-md text-label-md text-on-surface min-w-[48px] sm:min-w-[60px]">
+        {item.label}
+      </label>
       <div className="flex-1 flex items-center gap-1 justify-end sm:justify-start">
         <input
+          id={inputId}
           type="number"
           inputMode="numeric"
+          min={0}
+          max={300}
+          step={1}
+          aria-label={`${item.label}通勤时长（分钟）`}
           value={item.minutes}
           onChange={(e) => onMinutesChange(item.id, e.target.value)}
           placeholder="0"
@@ -141,6 +149,7 @@ export default function CommuteInput({ times, order, onTimesChange, onOrderChang
 
     const oldIndex = currentOrder.indexOf(active.id as string)
     const newIndex = currentOrder.indexOf(over.id as string)
+    if (oldIndex < 0 || newIndex < 0) return
     const newOrder = arrayMove(currentOrder, oldIndex, newIndex)
     onOrderChange(newOrder)
   }

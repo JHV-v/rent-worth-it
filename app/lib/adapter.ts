@@ -87,6 +87,8 @@ function hasSubwayAccess(
 export function mapFormDataToScoreInput(form: RentFormData): RawScoreInput {
   const options = form.activeOptions ?? {}
   const convenience = options['周边便利度'] ?? options['配套便利']
+  const convenienceTag = pickFirstTag(convenience)
+  const applianceTag = pickFirstTag(options['家电配置'])
 
   return {
     rent: form.rent,
@@ -98,10 +100,8 @@ export function mapFormDataToScoreInput(form: RentFormData): RawScoreInput {
     space: pickFirstTag(options['空间感觉']),
     condition: pickFirstTag(options['家电配置']),
     subway: hasSubwayAccess(form.commuteTimes, convenience),
-    food: pickFirstTag(convenience)?.length ? mapConvenience(pickFirstTag(convenience)) : undefined,
-    facilities: pickFirstTag(options['家电配置'])?.length
-      ? mapAppliance(pickFirstTag(options['家电配置']))
-      : undefined,
+    food: convenienceTag?.length ? mapConvenience(convenienceTag) : undefined,
+    facilities: applianceTag?.length ? mapAppliance(applianceTag) : undefined,
     housingType: detectHousingType(options['租赁类型']),
     cityType: migrateCityType(pickFirstTag(options['城市类型'])),
     utility: pickFirstTag(options['水电收费']),

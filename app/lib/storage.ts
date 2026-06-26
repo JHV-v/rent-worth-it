@@ -42,7 +42,9 @@ export function saveRentFormData(data: RentFormData): void {
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
   } catch (err) {
-    console.warn('[storage] 保存失败：', err)
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[storage] 保存失败：', err)
+    }
   }
 }
 
@@ -58,18 +60,24 @@ export function loadRentFormData(): RentFormData | null {
     if (isRentFormData(parsed)) return parsed
 
     if (!isStoredPayload(parsed)) {
-      console.warn('[storage] 数据 schema 不匹配，已忽略')
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[storage] 数据 schema 不匹配，已忽略')
+      }
       return null
     }
     if (parsed.version !== STORAGE_VERSION) {
-      console.warn(
-        `[storage] 版本号不一致（存储 v${parsed.version}, 当前 v${STORAGE_VERSION}），已忽略`,
-      )
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(
+          `[storage] 版本号不一致（存储 v${parsed.version}, 当前 v${STORAGE_VERSION}），已忽略`,
+        )
+      }
       return null
     }
     return parsed.data
   } catch (err) {
-    console.warn('[storage] 解析失败：', err)
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[storage] 解析失败：', err)
+    }
     return null
   }
 }

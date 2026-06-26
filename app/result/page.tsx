@@ -3,7 +3,6 @@
 import { Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import QRCode from 'qrcode'
 import { mapFormDataToScoreInput, type RentFormData } from '../lib/adapter'
 import { calculateScore, type ScoreResult, type RawScoreInput } from '../lib/score'
 import { loadRentFormData } from '../lib/storage'
@@ -22,6 +21,7 @@ function ResultContent() {
   const sharePosterRef = useRef<HTMLDivElement>(null)
   const [formData, setFormData] = useState<RentFormData | null>(null)
   const [qrCodeUrl, setQrCodeUrl] = useState('')
+  const [posterMounted, setPosterMounted] = useState(false)
 
   useEffect(() => {
     const t = searchParams.get('t')
@@ -35,14 +35,23 @@ function ResultContent() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-
-    QRCode.toDataURL(window.location.origin, {
-      width: 192,
-      margin: 1,
-      color: { dark: '#111827', light: '#ffffff' },
-    })
-      .then(setQrCodeUrl)
-      .catch(() => setQrCodeUrl(''))
+    let cancelled = false
+    ;(async () => {
+      try {
+        const QRCode = (await import('qrcode')).default
+        const url = await QRCode.toDataURL(window.location.origin, {
+          width: 192,
+          margin: 1,
+          color: { dark: '#111827', light: '#ffffff' },
+        })
+        if (!cancelled) setQrCodeUrl(url)
+      } catch {
+        if (!cancelled) setQrCodeUrl('')
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const score: ScoreResult | null = useMemo(() => {
@@ -58,9 +67,12 @@ function ResultContent() {
   if (!formData) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface">
-        <div className="flex flex-col items-center gap-4 text-center px-6">
+        <div className="flex flex-col items-center gap-4 text-center px-6 max-w-md">
           <span className="material-symbols-outlined text-5xl text-on-surface-variant/40">sentiment_dissatisfied</span>
           <p className="text-on-surface-variant">暂无评测数据，请先填写租房信息</p>
+          <p className="text-xs text-on-surface-variant/80 leading-relaxed">
+            这是别人的报告链接？测评数据保存在原浏览器中，请用同一浏览器打开，或重新填写测评。
+          </p>
           <button
             type="button"
             onClick={() => router.replace('/')}
@@ -99,33 +111,56 @@ function ResultContent() {
   }
 
   const handleShareImage = async () => {
-    const node = sharePosterRef.current
-    if (!node) return
+    try {
+      // 延迟挂载海报 DOM，避免一直占用渲染开销
+      setPosterMounted(true)
+      // 等一帧让 SharePoster 出现在 DOM 中
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-    const { default: html2canvas } = await import('html2canvas')
-    const canvas = await html2canvas(node, {
-      backgroundColor: null,
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    })
+      const node = sharePosterRef.current
+      if (!node) {
+        alert('分享图生成失败，请稍后重试')
+        return
+      }
 
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 0.95))
-    if (!blob) return
+      const { default: html2canvas } = await import('html2canvas')
+      const canvas = await html2canvas(node, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      })
 
-    const file = new File([blob], `rent-score-${score.totalScore}.png`, { type: 'image/png' })
-    const shareData = {
-      title: '我的租房性价比报告',
-      text: `我的租房性价比 ${score.totalScore} 分，${score.persona}。你也来测测这房租得值不值。`,
-      files: [file],
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 0.95))
+      if (!blob) {
+        alert('分享图生成失败，请稍后重试')
+        return
+      }
+
+      const file = new File([blob], `rent-score-${score.totalScore}.png`, { type: 'image/png' })
+      const shareData = {
+        title: '我的租房性价比报告',
+        text: `我的租房性价比 ${score.totalScore} 分，${score.persona}。你也来测测这房租得值不值。`,
+        files: [file],
+      }
+
+      if (navigator.canShare?.(shareData)) {
+        try {
+          await navigator.share(shareData)
+          return
+        } catch (err) {
+          // 用户取消静默忽略
+          if (err instanceof Error && err.name === 'AbortError') return
+          throw err
+        }
+      }
+
+      downloadBlob(blob)
+    } catch (err) {
+      // AbortError 已在内部处理；其它错误兜底提示
+      if (err instanceof Error && err.name === 'AbortError') return
+      alert('分享图生成失败，请稍后重试')
     }
-
-    if (navigator.canShare?.(shareData)) {
-      await navigator.share(shareData)
-      return
-    }
-
-    downloadBlob(blob)
   }
 
   return (
@@ -146,10 +181,6 @@ function ResultContent() {
       <header className="bg-white/70 backdrop-blur-xl border-b border-outline-variant/30 fixed w-full top-0 z-50">
         <div className="flex justify-between items-center px-margin-desktop h-16 w-full max-w-container-max mx-auto">
           <div className="text-headline-md font-headline-md font-bold text-primary tracking-tight">RentScore AI</div>
-          <div className="flex gap-stack-md">
-            <span className="material-symbols-outlined text-on-surface-variant hover:bg-surface-container transition-colors p-2 rounded-full cursor-pointer">help</span>
-            <span className="material-symbols-outlined text-on-surface-variant hover:bg-surface-container transition-colors p-2 rounded-full cursor-pointer">settings</span>
-          </div>
         </div>
       </header>
 
@@ -160,11 +191,13 @@ function ResultContent() {
           <ProsConsSection score={score} input={rawInput} />
           <AIRoastSection score={score} input={rawInput} />
           <RecommendationsSection score={score} />
-          <div className="fixed left-[-9999px] top-0 pointer-events-none" aria-hidden="true">
-            <div ref={sharePosterRef}>
-              <SharePoster score={score} input={rawInput} qrCodeUrl={qrCodeUrl} />
+          {posterMounted && (
+            <div className="fixed left-[-9999px] top-0 pointer-events-none" aria-hidden="true">
+              <div ref={sharePosterRef}>
+                <SharePoster score={score} input={rawInput} qrCodeUrl={qrCodeUrl} />
+              </div>
             </div>
-          </div>
+          )}
           <ShareCTA onRestart={handleRestart} onBack={handleBack} onShareImage={handleShareImage} />
         </div>
       </main>

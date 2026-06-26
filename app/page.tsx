@@ -39,6 +39,7 @@ const validateFormData = (form: RentFormData): ValidationResult => {
 export default function HomePage() {
   const router = useRouter()
   const [initialData, setInitialData] = useState<RentFormData | null | undefined>(undefined)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const saved = loadRentFormData()
@@ -48,9 +49,10 @@ export default function HomePage() {
   const handleSubmit = (formData: RentFormData) => {
     const validation = validateFormData(formData)
     if (!validation.ok) {
-      window.alert(validation.message)
+      setErrorMessage(validation.message)
       return
     }
+    setErrorMessage(null)
     saveRentFormData(formData)
     router.push(`/result?t=${Date.now()}`)
   }
@@ -60,7 +62,12 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-orange-50/20 text-on-surface">
-      <RentForm initialData={initialData} onSubmit={handleSubmit} />
+      <RentForm
+        initialData={initialData}
+        onSubmit={handleSubmit}
+        errorMessage={errorMessage}
+        onClearError={() => setErrorMessage(null)}
+      />
     </div>
   )
 }

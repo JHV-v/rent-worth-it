@@ -4,7 +4,11 @@ import Redis from 'ioredis'
 declare global {
   // eslint-disable-next-line no-var
   var __redis: Redis | null | undefined
+  // eslint-disable-next-line no-var
+  var __redisLastErrorAt: number | undefined
 }
+
+const ERROR_LOG_INTERVAL_MS = 5 * 60 * 1000
 
 /**
  * 获取 Redis 客户端单例。
@@ -30,9 +34,23 @@ export function getRedis(): Redis | null {
       enableOfflineQueue: false,
       retryStrategy: (times) => Math.min(times * 200, 2000),
     })
-    client.on('error', () => {
-      // 静默：避免日志刷屏；调用方会捕获错误并降级
+    client.on('error', (err) => {
+      // 节流：每 5 分钟最多打印一次，避免日志刷屏但不静默
+      const now = Date.now()
+      const last = globalThis.__redisLastErrorAt ?? 0
+      if (now - last >= ERROR_LOG_INTERVAL_MS) {
+        globalThis.__redisLastErrorAt = now
+        console.error('[redis] connection error:', err?.message ?? err)
+      }
     })
+    // 连接关闭时清空单例，下次 getClient() 会重新建立
+    const reset = () => {
+      if (globalThis.__redis === client) {
+        globalThis.__redis = undefined
+      }
+    }
+    client.on('end', reset)
+    client.on('close', reset)
     globalThis.__redis = client
     return client
   } catch {

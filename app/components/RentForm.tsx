@@ -24,7 +24,7 @@ const SUNLIGHT_ICONS = [
 ]
 const NOISE_OPTIONS = ['极其安静', '偶尔噪音', '隔音极差']
 const CONVENIENCE_OPTIONS = ['很方便', '一般', '不方便']
-const SPACE_OPTIONS = ['拥挤', '偏小', '刚好', '宽敛']
+const SPACE_OPTIONS = ['拥挤', '偏小', '刚好', '宽敞']
 const FLOOR_OPTIONS = ['电梯房', '低层步梯', '高层步梯']
 const APPLIANCE_OPTIONS = ['齐全且新', '刚好够用', '破旧老化', '纯毛坯房']
 const BATHROOM_OPTIONS = ['独立卫浴', '双人共卫', '多人共卫']
@@ -59,9 +59,11 @@ function createEmptyForm(): RentFormData {
 interface RentFormProps {
   initialData?: RentFormData | null
   onSubmit: (data: RentFormData) => void
+  errorMessage?: string | null
+  onClearError?: () => void
 }
 
-export default function RentForm({ initialData, onSubmit }: RentFormProps) {
+export default function RentForm({ initialData, onSubmit, errorMessage, onClearError }: RentFormProps) {
   const [form, setForm] = useState<RentFormData>(initialData ?? createEmptyForm)
 
   const updateOption = useCallback((label: string, value: string | string[]) => {
@@ -69,11 +71,13 @@ export default function RentForm({ initialData, onSubmit }: RentFormProps) {
       ...prev,
       activeOptions: { ...prev.activeOptions, [label]: Array.isArray(value) ? value : [value] },
     }))
-  }, [])
+    onClearError?.()
+  }, [onClearError])
 
   const updateContract = useCallback((field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
-  }, [])
+    onClearError?.()
+  }, [onClearError])
 
   const handleSubmit = () => {
     onSubmit(form)
@@ -264,7 +268,15 @@ export default function RentForm({ initialData, onSubmit }: RentFormProps) {
         <div className="h-px bg-stone-100" />
 
         {/* 提交按钮 */}
-        <div className="p-8 bg-stone-50/80 border-t border-stone-100">
+        <div className="p-8 bg-stone-50/80 border-t border-stone-100 space-y-3">
+          {errorMessage && (
+            <div
+              role="alert"
+              className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+            >
+              {errorMessage}
+            </div>
+          )}
           <button
             type="button"
             onClick={handleSubmit}

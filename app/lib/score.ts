@@ -38,7 +38,6 @@ export const TAG_DICTIONARY = {
   // 空间感（正向）
   space: {
     宽敞: 5,
-    宽敛: 5,
     刚好: 4,
     适中: 4,
     偏小: 2,
@@ -219,11 +218,28 @@ export function normalizeInput(rawInput: RawScoreInput | null | undefined): Scor
 // 维度评分（各为 0-100 分）
 // ============================================================
 
+// 城市等级修正系数：集中管理 rent / bonus / stress 三处差异化数值
+// key 是 cityType 取值（1-5），高线城市租金更包容、生活体验加成更高、但压力也略增
+const CITY_MODIFIER: Record<5 | 4 | 3 | 2 | 1, { rent: number; bonus: number; stress: number }> = {
+  5: { rent: 8, bonus: 5, stress: 5 }, // 一线
+  4: { rent: 4, bonus: 3, stress: 2 }, // 新一线
+  3: { rent: 0, bonus: 0, stress: 0 }, // 二线
+  2: { rent: -4, bonus: -3, stress: -2 }, // 三线及以下
+  1: { rent: -6, bonus: -3, stress: -3 }, // 兜底（理论上 cityType 默认 3，不会到 1）
+}
+
+function getCityModifier(cityType: number): { rent: number; bonus: number; stress: number } {
+  if (cityType >= 5) return CITY_MODIFIER[5]
+  if (cityType >= 4) return CITY_MODIFIER[4]
+  if (cityType >= 3) return CITY_MODIFIER[3]
+  if (cityType >= 2) return CITY_MODIFIER[2]
+  return CITY_MODIFIER[1]
+}
+
 // 房租：占比 ≤20% 满分，≥60% 0 分，线性平滑
 // 城市等级影响房租容忍度：高线城市租金占比普遍高，给予一定宽容
 function calcRentScore(rentRatio: number, cityType: number): number {
-  // 一线(5):+8, 新一线(4):+4, 二线(3):0, 三线及以下(2):-4
-  const cityTolerance = cityType >= 5 ? 8 : cityType >= 4 ? 4 : cityType >= 3 ? 0 : cityType >= 2 ? -4 : -6
+  const cityTolerance = getCityModifier(cityType).rent
   const adjustedRatio = rentRatio + cityTolerance
   return clamp(100 - ((adjustedRatio - 20) / 40) * 100)
 }
@@ -232,12 +248,7 @@ function calcRentScore(rentRatio: number, cityType: number): number {
 // 一线城市资源多但拥挤，县城安静但配套少，综合下来各有优劣
 // 但在同等条件下，高线城市的居住品质天花板更高
 function calcCityBonus(cityType: number): number {
-  // 一线(5):+5, 新一线(4):+3, 二线(3):0, 三线及以下(2):-3
-  if (cityType >= 5) return 5
-  if (cityType >= 4) return 3
-  if (cityType >= 3) return 0
-  if (cityType >= 2) return -3
-  return -3
+  return getCityModifier(cityType).bonus
 }
 
 // 通勤：连续指数衰减，30 分钟约 61 分、60 分钟约 37 分、120 分钟约 13 分
@@ -282,14 +293,13 @@ function calcLifeScore(input: ScoreInput): number {
 
 // 压力指数：房租超 20% 部分 ×1.5 + 通勤超 30 分钟部分 ×0.4 + 低收入惩罚
 // 合租场景轻度加压（与陌生人共享空间本身就是隐性压力）：+5 ~ +10
-function calcStress(rentRatio: number, commuteTime: number, income: number, housingType: HousingType, cityType: number): number {
+function calcStress(rentRatio: number, commuteWeighted: number, income: number, housingType: HousingType, cityType: number): number {
   const incomePenalty = income < 5000 ? 15 : income < 10000 ? 8 : 0
   const sharedPenalty = housingType === 'shared' ? 8 : 0
-  // 一线(5):+5, 新一线(4):+2, 二线(3):0, 三线及以下(2):-2
-  const cityModifier = cityType >= 5 ? 5 : cityType >= 4 ? 2 : cityType >= 3 ? 0 : cityType >= 2 ? -2 : -3
+  const cityModifier = getCityModifier(cityType).stress
   return clamp(
     Math.max(0, rentRatio - 20) * 1.5 +
-      Math.max(0, commuteTime - 30) * 0.4 +
+      Math.max(0, commuteWeighted - 30) * 0.4 +
       incomePenalty +
       sharedPenalty +
       cityModifier,

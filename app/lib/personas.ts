@@ -24,6 +24,16 @@ export const PERSONAS: ReadonlyArray<Persona> = [
   { min: 0, id: 'doomed', label: '人间不值得' },
 ]
 
+// 开发模式下自检：PERSONAS 必须按 min 从高到低排序，否则 pickPersona 命中错档
+if (process.env.NODE_ENV !== 'production') {
+  for (let i = 1; i < PERSONAS.length; i++) {
+    console.assert(
+      PERSONAS[i - 1].min >= PERSONAS[i].min,
+      'PERSONAS 必须按 min 从高到低排序',
+    )
+  }
+}
+
 const FALLBACK = PERSONAS[PERSONAS.length - 1]
 
 /** 根据总分挑选 persona 完整对象 */

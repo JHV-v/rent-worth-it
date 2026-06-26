@@ -11,3 +11,9 @@ next-env.d.ts
 .out-*.txt
 .commit-msg.txt
 .tmp-*
+
+# 测试覆盖率 / 日志 / 系统/IDE 噪声
+coverage/
+*.log
+.DS_Store
+.idea/

@@ -1,5 +1,7 @@
 'use client'
 
+import { useId } from 'react'
+
 interface BasicInfoFieldsProps {
   salary: string
   rent: string
@@ -15,6 +17,8 @@ export default function BasicInfoFields({
   onSalaryChange,
   onRentChange,
 }: BasicInfoFieldsProps) {
+  const salaryId = useId()
+  const rentId = useId()
   const rentHint =
     housingType?.startsWith('合租')
       ? '（请填你自己承担的那份，例：总租6000，你住主卧承担3000就填3000）'
@@ -25,11 +29,18 @@ export default function BasicInfoFields({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="font-label-md text-label-md text-on-surface-variant">月薪资</label>
+        <label htmlFor={salaryId} className="font-label-md text-label-md text-on-surface-variant">
+          月薪资
+        </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-medium">￥</span>
           <input
+            id={salaryId}
             type="number"
+            inputMode="numeric"
+            min={0}
+            step={100}
+            aria-label="月薪资"
             value={salary}
             onChange={(e) => onSalaryChange(e.target.value)}
             placeholder="请输入金额"
@@ -38,7 +49,7 @@ export default function BasicInfoFields({
         </div>
       </div>
       <div className="space-y-2">
-        <label className="font-label-md text-label-md text-on-surface-variant">
+        <label htmlFor={rentId} className="font-label-md text-label-md text-on-surface-variant">
           月租金
           {rentHint && (
             <span
@@ -53,7 +64,12 @@ export default function BasicInfoFields({
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-medium">￥</span>
           <input
+            id={rentId}
             type="number"
+            inputMode="numeric"
+            min={0}
+            step={100}
+            aria-label="月租金"
             value={rent}
             onChange={(e) => onRentChange(e.target.value)}
             placeholder="请输入金额"

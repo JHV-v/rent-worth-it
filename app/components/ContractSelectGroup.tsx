@@ -1,5 +1,7 @@
 'use client'
 
+import { useId } from 'react'
+
 interface ContractSelectGroupProps {
   deposit: string
   agencyFee: string
@@ -22,26 +24,34 @@ export default function ContractSelectGroup({
   contractTerm,
   onChange,
 }: ContractSelectGroupProps) {
+  const baseId = useId()
   const values: Record<string, string> = { deposit, agencyFee, paymentCycle, contractTerm }
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      {Object.entries(SELECT_OPTIONS).map(([key, { label, options }]) => (
-        <div key={key} className="space-y-1.5">
-          <label className="font-label-md text-label-md text-on-surface-variant">{label}</label>
-          <select
-            value={values[key]}
-            onChange={(e) => onChange(key, e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border border-outline-variant/50 bg-surface text-on-surface font-body-md focus:outline-none"
-          >
-            {options.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </div>
-      ))}
+      {Object.entries(SELECT_OPTIONS).map(([key, { label, options }]) => {
+        const id = `${baseId}-${key}`
+        return (
+          <div key={key} className="space-y-1.5">
+            <label htmlFor={id} className="font-label-md text-label-md text-on-surface-variant">
+              {label}
+            </label>
+            <select
+              id={id}
+              aria-label={label}
+              value={values[key]}
+              onChange={(e) => onChange(key, e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-outline-variant/50 bg-surface text-on-surface font-body-md focus:outline-none"
+            >
+              {options.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+        )
+      })}
     </div>
   )
 }

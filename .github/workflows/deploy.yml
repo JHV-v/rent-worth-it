@@ -22,8 +22,17 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 本次部署目标版本：$VERSION"
 
+      - name: 安装依赖（CI）
+        run: npm ci --no-audit --no-fund
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 单元测试
+        run: npm test
+
       - name: 镜像推送到 Gitee
-        if: env.GITEE_TOKEN != ''
+        if: ${{ secrets.GITEE_TOKEN != '' }}
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_OWNER: ${{ secrets.GITEE_OWNER }}

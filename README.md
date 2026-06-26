@@ -2,9 +2,10 @@
 
 > 一个把租房性价比量化成可分享分数卡的小工具 · 中文用户优先 · AI 风格辣评
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/JHV-v/rent-worth-it/releases)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/JHV-v/rent-worth-it/releases)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org/)
+[![Tests](https://img.shields.io/badge/tests-57%20passed-brightgreen.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
 
 ## 这是什么
@@ -89,12 +90,21 @@ npm run dev
 npm run test
 
 # 类型检查
-npx tsc --noEmit
+npm run typecheck
 
 # 生产构建
 npm run build
 npm run start
 ```
+
+## 环境变量
+
+| 变量名 | 必填 | 说明 |
+|--------|------|------|
+| `REDIS_URL` | 否 | Redis 连接串。不配则降级到 localStorage |
+| `NEXT_PUBLIC_SITE_ORIGIN` | 否 | 用于 `/api/visit-count` 的 Origin 校验，多个用逗号分隔 |
+
+详见 [.env.example](./.env.example)。
 
 ## 发版
 
@@ -145,8 +155,10 @@ npm run release:major    # 1.1.0 → 2.0.0（破坏性变更）
 - [x] v1.0.0 — 评分算法 + Stitch HTML 原型
 - [x] v1.0.1 — Stitch → JSX 重构 + UI 修复 + Redis 适配
 - [x] v1.1.0 — 分享海报 + GitHub Actions 自动部署
-- [ ] v1.2.0 — 城市选择（具体城市而非分级）
-- [ ] v1.3.0 — 留言吐槽墙 / 城市榜单
+- [x] v1.1.1 — 移动端适配（拖拽触屏、按钮缩放、布局紧凑）
+- [x] v1.5.0 — **质量大升级**：访问计数限流、时区统一、a11y、字体本地化、Redis 单例容错、CI 加测试 / 类型检查、安全 headers、SharePoster 延迟挂载
+- [ ] v1.6.0 — 城市选择（具体城市而非分级）
+- [ ] v1.7.0 — 留言吐槽墙 / 城市榜单
 - [ ] v2.0.0 — 接入真实房价数据（贝壳/链家 API）
 
 ## License

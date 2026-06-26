@@ -10,19 +10,21 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 触发 Gitee 强制同步（如果配置了 Gitee Token）
+      - name: 检出 GitHub 最新代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 镜像推送到 Gitee（用账号 + token 走 https）
         if: env.GITEE_TOKEN != ''
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_OWNER: ${{ secrets.GITEE_OWNER }}
           GITEE_REPO: ${{ secrets.GITEE_REPO }}
         run: |
-          curl -X POST \
-            -H "Content-Type: application/json" \
-            -d "{\"access_token\":\"$GITEE_TOKEN\",\"force\":true}" \
-            "https://gitee.com/api/v5/repos/$GITEE_OWNER/$GITEE_REPO/force_sync_pull"
-          # 等待 Gitee 同步完成
-          sleep 30
+          git remote add gitee "https://${GITEE_OWNER}:${GITEE_TOKEN}@gitee.com/${GITEE_OWNER}/${GITEE_REPO}.git"
+          git push gitee main --force
+          git push gitee --tags --force
 
       - name: SSH 到京东云服务器并执行部署
         uses: appleboy/ssh-action@v1.0.3
@@ -34,7 +36,7 @@ jobs:
           script: |
             cd /var/www/rent-app
             git fetch --all --tags
-            git pull --ff-only
+            git reset --hard origin/main
             npm install --no-audit --no-fund
             npm run build
             pm2 restart rent-app --update-env

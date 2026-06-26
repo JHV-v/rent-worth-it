@@ -15,7 +15,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 镜像推送到 Gitee（用账号 + token 走 https）
+      - name: 读取期望版本号（来自 package.json）
+        id: pkg
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 本次部署目标版本：$VERSION"
+
+      - name: 镜像推送到 Gitee
         if: env.GITEE_TOKEN != ''
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
@@ -25,20 +32,65 @@ jobs:
           git remote add gitee "https://${GITEE_OWNER}:${GITEE_TOKEN}@gitee.com/${GITEE_OWNER}/${GITEE_REPO}.git"
           git push gitee main --force
           git push gitee --tags --force
+          echo "✅ Gitee 已同步"
 
       - name: SSH 到京东云服务器并执行部署
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          EXPECTED_VERSION: ${{ steps.pkg.outputs.version }}
         with:
           host: ${{ secrets.JD_HOST }}
           username: ${{ secrets.JD_USER }}
           key: ${{ secrets.JD_SSH_KEY }}
           port: ${{ secrets.JD_PORT }}
+          envs: EXPECTED_VERSION
           script: |
+            set -e
             cd /var/www/rent-app
+
+            echo "==> [1/6] 拉取最新代码（强制对齐远程）..."
             git fetch --all --tags
             git reset --hard origin/main
+
+            echo "==> [2/6] 校验代码层版本号..."
+            ACTUAL_VERSION=$(node -p "require('./package.json').version")
+            if [ "$ACTUAL_VERSION" != "$EXPECTED_VERSION" ]; then
+              echo "❌ 版本不匹配：期望 $EXPECTED_VERSION，实际 $ACTUAL_VERSION"
+              exit 1
+            fi
+            echo "  ✅ 版本号一致：$ACTUAL_VERSION"
+
+            echo "==> [3/6] 安装依赖..."
             npm install --no-audit --no-fund
+
+            echo "==> [4/6] 构建生产产物..."
             npm run build
+
+            echo "==> [5/6] 重启 PM2 服务..."
             pm2 restart rent-app --update-env
+
+            echo "==> [6/6] 健康检查（等待服务启动）..."
+            sleep 3
+            for i in 1 2 3 4 5; do
+              if curl -fsS --max-time 5 -o /dev/null http://localhost:3000; then
+                echo "  ✅ 健康检查通过（第 $i 次尝试）"
+                break
+              fi
+              if [ "$i" = "5" ]; then
+                echo "❌ 服务无响应，部署失败"
+                pm2 logs rent-app --lines 30 --nostream
+                exit 1
+              fi
+              echo "  ⏳ 等待服务启动... (第 $i 次)"
+              sleep 3
+            done
+
             pm2 status
-            echo "✅ 部署完成，当前版本：$(node -p "require('./package.json').version")"
+            echo ""
+            echo "🎉 部署成功！上线版本：$ACTUAL_VERSION"
+
+      - name: 部署失败时打印明显标记
+        if: failure()
+        run: |
+          echo "::error::❌ 部署失败！请检查上方日志。"
+          echo "::error::常见原因：1) Gitee 同步失败 2) build 失败 3) 健康检查超时 4) 版本号校验失败"

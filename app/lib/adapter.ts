@@ -1,4 +1,8 @@
 import type { HousingType, RawScoreInput } from './score'
+import {
+  COMMUTE_FATIGUE_COEFFICIENT,
+  COMMUTE_POSITION_WEIGHTS,
+} from './score/constants'
 
 export type RentFormData = {
   salary: string
@@ -24,31 +28,46 @@ function detectHousingType(tags: string[] | undefined): HousingType {
   return 'unknown'
 }
 
-// 按拖拽顺序加权计算等效通勤时间
-// 排在第1位的权重最高(×1.0)，第2位(×0.7)，第3位(×0.4)，第4位(×0.2)
-// 0min 的出行方式跳过不参与计算
-function calcWeightedCommute(
+/**
+ * 等效疲惫度时长（v1.6.0）：
+ *   sum_i minutes_i × positionWeight_i × fatigueCoeff_i
+ *
+ * - positionWeight 依据拖拽顺序（1.0 / 0.7 / 0.4 / 0.2）
+ * - fatigueCoeff 依据出行方式（COMMUTE_FATIGUE_COEFFICIENT）
+ * - 0 分钟的方式跳过
+ */
+function calcCommuteFatigueMinutes(
   commuteTimes: Record<string, string> | undefined,
   commuteOrder: string[] | undefined,
 ): number {
   if (!commuteTimes) return 0
-  const weights = [1.0, 0.7, 0.4, 0.2]
-  let totalWeighted = 0
-  let totalWeight = 0
 
-  const order = commuteOrder && commuteOrder.length > 0
-    ? commuteOrder
-    : Object.keys(commuteTimes)
+  const order =
+    commuteOrder && commuteOrder.length > 0
+      ? commuteOrder
+      : Object.keys(commuteTimes)
 
-  order.forEach((key, idx) => {
-    const minutes = Number(commuteTimes[key])
-    if (!Number.isFinite(minutes) || minutes <= 0) return
-    const w = weights[idx] ?? 0.1
-    totalWeighted += minutes * w
-    totalWeight += w
-  })
+  let sum = 0
+  for (let i = 0; i < order.length; i++) {
+    const method = order[i]
+    const minutes = Number(commuteTimes[method])
+    if (!Number.isFinite(minutes) || minutes <= 0) continue
+    const positionWeight = COMMUTE_POSITION_WEIGHTS[i] ?? 0.1
+    const fatigue = COMMUTE_FATIGUE_COEFFICIENT[method] ?? 1.0
+    sum += minutes * positionWeight * fatigue
+  }
+  return sum
+}
 
-  return totalWeight > 0 ? totalWeighted / totalWeight : 0
+/** 所有方式时长求和（不加权） */
+function calcCommuteTotalMinutes(
+  commuteTimes: Record<string, string> | undefined,
+): number {
+  if (!commuteTimes) return 0
+  return Object.values(commuteTimes)
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n) && n > 0)
+    .reduce((a, b) => a + b, 0)
 }
 
 // 兼容旧版：取最短非零通勤
@@ -94,7 +113,8 @@ export function mapFormDataToScoreInput(form: RentFormData): RawScoreInput {
     rent: form.rent,
     income: form.salary,
     commuteTime: pickCommuteTime(form.commuteTimes),
-    commuteWeighted: calcWeightedCommute(form.commuteTimes, form.commuteOrder),
+    commuteWeighted: calcCommuteFatigueMinutes(form.commuteTimes, form.commuteOrder),
+    commuteTotalMinutes: calcCommuteTotalMinutes(form.commuteTimes),
     sunlight: pickFirstTag(options['采光通风']),
     noise: pickFirstTag(options['隔音水平']),
     space: pickFirstTag(options['空间感觉']),

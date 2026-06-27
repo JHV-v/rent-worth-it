@@ -28,10 +28,13 @@ export function getRedis(): Redis | null {
   }
 
   try {
+    // enableOfflineQueue: true —— 首次冷启动时 TCP 还未握手好，
+    // 让 ioredis 把命令排队等 ready 后再发，避免 "Stream isn't writeable" 误报。
+    // 上层（visit-count/route.ts）已用 1.5s withTimeout 兜底，连接长时间坏掉也不会卡请求。
     const client = new Redis(url, {
       lazyConnect: false,
       maxRetriesPerRequest: 2,
-      enableOfflineQueue: false,
+      enableOfflineQueue: true,
       retryStrategy: (times) => Math.min(times * 200, 2000),
     })
     client.on('error', (err) => {

@@ -11,6 +11,7 @@
 - 访问计数：新增 `GET /api/visit-count/health` 自检接口（暴露 Redis / Origin 配置状态）
 - 访问计数：API 加 Redis ping 预检 + 1.5s 操作超时 + phase 标签日志
 - 访问计数：前端失败时自动重试一次（间隔 500ms）；状态条加 loading 态，3s 兜底切 empty
+- 访问计数：修复 Redis 冷启动 race condition —— `enableOfflineQueue` 由 `false` 改为 `true`，避免首次请求时 TCP 未就绪导致 "Stream isn't writeable" 报错并卡住单例
 - UI：通勤区移除重复的"长按 ↕ 排序权重"提示，改为紧凑 inline hint
 - UI：主页加小红书 / B 站 / 抖音 占位入口，未来挂链接零成本
 - 文档：新增 [docs/VISIT-COUNTER.md](./docs/VISIT-COUNTER.md) 服务器配置 / 排查 checklist

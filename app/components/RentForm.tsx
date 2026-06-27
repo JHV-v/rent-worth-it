@@ -152,7 +152,6 @@ export default function RentForm({ initialData, onSubmit, errorMessage, onClearE
               <span className="material-symbols-outlined text-primary">commute</span>
               <h2 className="font-headline-sm text-headline-sm text-on-surface">通勤出行</h2>
             </div>
-            <div className="text-[10px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded uppercase tracking-wider">长按 ↕ 排序权重</div>
           </div>
 
           <CommuteInput

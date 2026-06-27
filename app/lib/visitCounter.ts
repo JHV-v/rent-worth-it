@@ -1,100 +1,59 @@
-// 访问计数：基于 localStorage 的本地真实计数（仅当前浏览器/设备）。
-// 同时支持远程 Redis 计数（通过 /api/visit-count），远程不可用时回退到 localStorage。
-// 每次页面加载调用 incrementVisit() 一次，返回最新的 { today, total }。
-
-import { getTodayDateString } from './dateUtils'
-
-const TOTAL_KEY = 'rent-visit-total'
-const TODAY_KEY = 'rent-visit-today' // 存 { date: 'YYYY-MM-DD', count: number }
-
-type TodayBucket = {
-  date: string
-  count: number
-}
-
-function safeRead<T>(key: string): T | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(key)
-    if (!raw) return null
-    return JSON.parse(raw) as T
-  } catch {
-    return null
-  }
-}
-
-function safeWrite(key: string, value: unknown): void {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    // ignore
-  }
-}
+// 访问计数：仅展示来自 Redis 的真实计数（通过 /api/visit-count）。
+// Redis 不可用时返回 {0,0}，由调用方决定是否隐藏，不再走 localStorage 兜底
+// 以避免"本设备访问次数"被误读为"全网访问次数"。
 
 export type VisitStats = {
   today: number
   total: number
 }
 
-export function incrementVisit(): VisitStats {
-  if (typeof window === 'undefined') return { today: 0, total: 0 }
+const RETRY_DELAY_MS = 500
 
-  // 总访问 +1
-  const totalRaw = safeRead<number>(TOTAL_KEY)
-  const total = (typeof totalRaw === 'number' && Number.isFinite(totalRaw) ? totalRaw : 0) + 1
-  safeWrite(TOTAL_KEY, total)
-
-  // 今日访问：跨日重置
-  const todayKey = getTodayDateString()
-  const todayBucket = safeRead<TodayBucket>(TODAY_KEY)
-  const isSameDay = todayBucket?.date === todayKey
-  const todayCount = (isSameDay ? todayBucket.count : 0) + 1
-  safeWrite(TODAY_KEY, { date: todayKey, count: todayCount } satisfies TodayBucket)
-
-  return { today: todayCount, total }
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 // ---- 远程计数（Redis via /api/visit-count） ----
 
-export async function incrementVisitRemote(): Promise<VisitStats> {
+async function postOnce(): Promise<VisitStats | null> {
   try {
     const res = await fetch('/api/visit-count', { method: 'POST' })
-    if (!res.ok) return { today: 0, total: 0 }
+    if (!res.ok) return null
     const data: VisitStats & { fallback?: boolean } = await res.json()
-    if (data.fallback) return { today: 0, total: 0 }
+    if (data.fallback) return null
     return { today: data.today, total: data.total }
   } catch {
-    return { today: 0, total: 0 }
+    return null
   }
+}
+
+async function getOnce(): Promise<VisitStats | null> {
+  try {
+    const res = await fetch('/api/visit-count', { method: 'GET' })
+    if (!res.ok) return null
+    const data: VisitStats & { fallback?: boolean } = await res.json()
+    if (data.fallback) return null
+    return { today: data.today, total: data.total }
+  } catch {
+    return null
+  }
+}
+
+// 失败时自动重试一次（间隔 500ms），仍失败则返回 {0,0}
+export async function incrementVisitRemote(): Promise<VisitStats> {
+  const first = await postOnce()
+  if (first) return first
+  await sleep(RETRY_DELAY_MS)
+  const retry = await postOnce()
+  return retry ?? { today: 0, total: 0 }
 }
 
 export async function getVisitStatsRemote(): Promise<VisitStats> {
-  try {
-    const res = await fetch('/api/visit-count', { method: 'GET' })
-    if (!res.ok) return getVisitStatsLocal()
-    const data: VisitStats & { fallback?: boolean } = await res.json()
-    // 远程未配置或失败时回退到本地
-    if (data.fallback) return getVisitStatsLocal()
-    return { today: data.today, total: data.total }
-  } catch {
-    return getVisitStatsLocal()
-  }
-}
-
-function getVisitStatsLocal(): VisitStats {
-  if (typeof window === 'undefined') return { today: 0, total: 0 }
-  const totalRaw = safeRead<number>(TOTAL_KEY)
-  const total = typeof totalRaw === 'number' && Number.isFinite(totalRaw) ? totalRaw : 0
-  const todayKey = getTodayDateString()
-  const todayBucket = safeRead<TodayBucket>(TODAY_KEY)
-  const todayCount = todayBucket?.date === todayKey ? todayBucket.count : 0
-  return { today: todayCount, total }
-}
-
-/** 返回远程统计（如果可用），否则回退到 localStorage */
-export async function getVisitStats(): Promise<VisitStats> {
-  return getVisitStatsRemote()
+  const first = await getOnce()
+  if (first) return first
+  await sleep(RETRY_DELAY_MS)
+  const retry = await getOnce()
+  return retry ?? { today: 0, total: 0 }
 }
 
 // 千分位格式化：1284 → "1,284"

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { calcLiveScore } from '../housing'
-import { normalizeInput } from '../normalize'
+import { calcLiveScore } from './housing'
+import { normalizeInput } from './normalize'
 
 // ============================================================
 // housing.test.ts —— 居住分加权

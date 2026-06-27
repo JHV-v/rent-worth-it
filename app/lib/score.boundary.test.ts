@@ -9,7 +9,6 @@ import { calculateScore } from './score'
 const baseInput = {
   rent: 3000,
   income: 10000,
-  commuteTime: 30,
   commuteWeighted: 30,
   commuteTotalMinutes: 30,
   sunlight: 3,

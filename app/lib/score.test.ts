@@ -16,7 +16,6 @@ describe('normalizeInput', () => {
     const result = normalizeInput({
       rent: 3000,
       income: 10000,
-      commuteTime: 30,
       sunlight: '阳光充足',
       noise: '隔音极差',
       space: '宽敞',
@@ -52,11 +51,9 @@ describe('normalizeInput', () => {
     const result = normalizeInput({
       rent: 'abc' as unknown as number,
       income: undefined,
-      commuteTime: -50,
     })
     expect(result.rent).toBe(0)
     expect(result.income).toBeGreaterThanOrEqual(1)
-    expect(result.commuteTime).toBe(0)
   })
 
   it('已是数字的字段直接裁剪到 1-5', () => {
@@ -79,7 +76,6 @@ describe('calculateScore - 输出结构', () => {
     const result = calculateScore({
       rent: 3000,
       income: 10000,
-      commuteTime: 30,
       sunlight: 4,
       noise: 2,
       space: 4,
@@ -147,7 +143,6 @@ describe('calculateScore - 典型场景', () => {
     const r = calculateScore({
       rent: 5000,
       income: 25000,
-      commuteTime: 10,
       commuteWeighted: 30,
       commuteTotalMinutes: 30,
       sunlight: 5,
@@ -186,7 +181,6 @@ describe('calculateScore - 典型场景', () => {
     const r = calculateScore({
       rent: 3000,
       income: 12000,
-      commuteTime: 30,
       commuteWeighted: 50,
       commuteTotalMinutes: 50,
       sunlight: 3,
@@ -224,7 +218,6 @@ describe('calculateScore - 典型场景', () => {
     const r = calculateScore({
       rent: 1200,
       income: 5000,
-      commuteTime: 20,
       commuteWeighted: 20,
       commuteTotalMinutes: 20,
       sunlight: 3,
@@ -260,7 +253,6 @@ describe('calculateScore - 典型场景', () => {
     const r = calculateScore({
       rent: 3000,
       income: 10000,
-      commuteTime: 60,
       commuteWeighted: 140,
       commuteTotalMinutes: 140,
       sunlight: 3,
@@ -295,7 +287,6 @@ describe('calculateScore - 极端输入鲁棒性', () => {
     const r = calculateScore({
       rent: 0,
       income: 0,
-      commuteTime: 0,
       commuteWeighted: 0,
       commuteTotalMinutes: 0,
     })

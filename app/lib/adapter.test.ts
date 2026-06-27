@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapFormDataToScoreInput, type RentFormData } from '../adapter'
+import { mapFormDataToScoreInput, type RentFormData } from './adapter'
 
 const HOUSING_TYPES = ['整租一居', '整租二居', '合租主卧', '合租次卧'] as const
 const CITY_TYPES = ['一线', '新一线', '二线', '三线及以下', '三线', '四线', '县城', '乡镇'] as const

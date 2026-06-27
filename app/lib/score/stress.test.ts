@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calcStress } from '../stress'
+import { calcStress } from './stress'
 
 // ============================================================
 // stress.test.ts —— 压力指数

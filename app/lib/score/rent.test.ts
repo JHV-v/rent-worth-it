@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calcRentScore } from '../rent'
+import { calcRentScore } from './rent'
 
 // ============================================================
 // rent.test.ts —— 分段函数单元测试

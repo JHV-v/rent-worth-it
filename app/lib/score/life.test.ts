@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { calcLifeScore } from '../life'
-import { normalizeInput } from '../normalize'
+import { calcLifeScore } from './life'
+import { normalizeInput } from './normalize'
 
 // ============================================================
 // life.test.ts —— 生活分加权

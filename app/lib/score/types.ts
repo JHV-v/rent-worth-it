@@ -13,7 +13,6 @@ export type HousingType = 'whole' | 'shared' | 'unknown'
 export type RawScoreInput = {
   rent?: number | string
   income?: number | string
-  commuteTime?: number | string
   sunlight?: string | number
   noise?: string | number
   space?: string | number
@@ -37,7 +36,6 @@ export type RawScoreInput = {
 export type ScoreInput = {
   rent: number
   income: number
-  commuteTime: number
   sunlight: number
   noise: number
   space: number

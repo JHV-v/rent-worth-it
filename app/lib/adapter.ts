@@ -70,15 +70,6 @@ function calcCommuteTotalMinutes(
     .reduce((a, b) => a + b, 0)
 }
 
-// 兼容旧版：取最短非零通勤
-function pickCommuteTime(commuteTimes: Record<string, string> | undefined): number {
-  if (!commuteTimes) return 0
-  const times = Object.values(commuteTimes)
-    .map((v) => Number(v))
-    .filter((n) => Number.isFinite(n) && n > 0)
-  return times.length === 0 ? 0 : Math.min(...times)
-}
-
 const CITY_TYPE_MIGRATION: Record<string, string> = {
   '三线': '三线及以下',
   '四线': '三线及以下',
@@ -112,7 +103,6 @@ export function mapFormDataToScoreInput(form: RentFormData): RawScoreInput {
   return {
     rent: form.rent,
     income: form.salary,
-    commuteTime: pickCommuteTime(form.commuteTimes),
     commuteWeighted: calcCommuteFatigueMinutes(form.commuteTimes, form.commuteOrder),
     commuteTotalMinutes: calcCommuteTotalMinutes(form.commuteTimes),
     sunlight: pickFirstTag(options['采光通风']),

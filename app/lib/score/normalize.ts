@@ -11,7 +11,6 @@ export function normalizeInput(rawInput: RawScoreInput | null | undefined): Scor
   return {
     rent: Math.max(0, toNumber(safe.rent, 0)),
     income: Math.max(1, toNumber(safe.income, 1)), // 防止除零
-    commuteTime: Math.max(0, toNumber(safe.commuteTime, 0)),
     sunlight: tagToScore(safe.sunlight, TAG_DICTIONARY.sunlight),
     noise: tagToScore(safe.noise, TAG_DICTIONARY.noise),
     space: tagToScore(safe.space, TAG_DICTIONARY.space),

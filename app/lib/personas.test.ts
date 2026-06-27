@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PERSONAS, pickPersona } from '../personas'
+import { PERSONAS, pickPersona } from './personas'
 
 describe('pickPersona', () => {
   it('0/10/20/.../100 都能选到 persona', () => {

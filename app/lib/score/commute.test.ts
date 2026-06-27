@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calcCommuteScore, calcCommuteTotalBonus } from '../commute'
+import { calcCommuteScore, calcCommuteTotalBonus } from './commute'
 
 // ============================================================
 // commute.test.ts —— 通勤双层评分单元测试

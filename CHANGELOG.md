@@ -7,6 +7,15 @@
 
 ## [Unreleased]
 
+### Planned
+- v1.6.2：`ScoreResult.diagnostics` 字段、合同期加成、楼层内在评分映射
+- v1.7.0：方法论页 `/methodology`、AI 辣评扩充、persona 个性化标签、一句日记
+- v1.8.0：分享预览模态框、海报差异化模板
+
+---
+
+## [1.6.1] - 2026-06-27
+
 ### Fixed
 - 访问计数：新增 `GET /api/visit-count/health` 自检接口（暴露 Redis / Origin 配置状态）
 - 访问计数：API 加 Redis ping 预检 + 1.5s 操作超时 + phase 标签日志
@@ -15,11 +24,6 @@
 - UI：通勤区移除重复的"长按 ↕ 排序权重"提示，改为紧凑 inline hint
 - UI：主页加小红书 / B 站 / 抖音 占位入口，未来挂链接零成本
 - 文档：新增 [docs/VISIT-COUNTER.md](./docs/VISIT-COUNTER.md) 服务器配置 / 排查 checklist
-
-### Planned
-- v1.6.1：`ScoreResult.diagnostics` 字段、合同期加成、楼层内在评分映射
-- v1.7.0：方法论页 `/methodology`、AI 辣评扩充、persona 个性化标签、一句日记
-- v1.8.0：分享预览模态框、海报差异化模板
 
 ---
 

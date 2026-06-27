@@ -2,7 +2,7 @@
 
 > 给你的房子打分，不是给你的人生打分。专业算法 + 一点温度。
 
-[![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)](https://github.com/JHV-v/rent-worth-it/releases)
+[![Version](https://img.shields.io/badge/version-1.6.1-blue.svg)](https://github.com/JHV-v/rent-worth-it/releases)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org/)
 [![Tests](https://img.shields.io/badge/tests-123%20passed-brightgreen.svg)](#)
@@ -136,7 +136,8 @@ npm run build        # 生产构建
 - [x] v1.1.1 — 移动端适配（拖拽触屏、按钮缩放、布局紧凑）
 - [x] v1.5.0 — **质量大升级**：访问计数限流、时区统一、a11y、字体本地化、Redis 单例容错、CI 加测试 / 类型检查、安全 headers、SharePoster 延迟挂载
 - [x] v1.6.0 — **算法核心升级**：房租分段函数、通勤双层判断、居住分 7 维加权、生活分 3 维加权
-- [ ] v1.6.1 — 访问计数稳定化（health 自检 + ping 超时 + 重试） / `ScoreResult.diagnostics` 字段 / 合同期加成 / 楼层评分映射
+- [x] v1.6.1 — **访问计数稳定化**：health 自检接口 + ping 预检 + 1.5s 超时 + 自动重试 + 三态 UI + 修 Redis 冷启动 race condition
+- [ ] v1.6.2 — `ScoreResult.diagnostics` 字段 / 合同期加成 / 楼层评分映射
 - [ ] v1.7.0 — 方法论页 `/methodology` / AI 辣评扩充 / persona 个性化标签 / 一句日记
 - [ ] v1.8.0 — 分享预览模态框 / 海报差异化模板
 - [ ] v2.0.0 — 接入真实房价数据（贝壳/链家 API）

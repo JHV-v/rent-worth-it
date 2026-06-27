@@ -178,13 +178,7 @@ function ResultContent() {
         <span className="hidden sm:inline">返回修改</span>
       </button>
 
-      <header className="bg-white/70 backdrop-blur-xl border-b border-outline-variant/30 fixed w-full top-0 z-50">
-        <div className="flex justify-between items-center px-margin-desktop h-16 w-full max-w-container-max mx-auto">
-          <div className="text-headline-md font-headline-md font-bold text-primary tracking-tight">RentScore AI</div>
-        </div>
-      </header>
-
-      <main className="report-gradient pb-stack-lg pt-16">
+      <main className="report-gradient pb-stack-lg pt-stack-lg">
         <div className="max-w-[800px] mx-auto px-margin-mobile md:px-0 pt-stack-lg space-y-gutter">
           <HeroSection totalScore={score.totalScore} persona={score.persona} />
           <EvaluationSection score={score} input={rawInput} />

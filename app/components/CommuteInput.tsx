@@ -162,12 +162,8 @@ export default function CommuteInput({ times, order, onTimesChange, onOrderChang
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <label className="font-label-md text-label-md text-on-surface-variant">
-          出行方式偏好（拖拽排序，顶部权重最高，0min默认为不考虑此出行方式）
+          出行方式偏好（顶部权重最高，0 min 表示不考虑此方式）
         </label>
-      </div>
-      <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mb-1">
-        <span className="material-symbols-outlined text-sm">swap_vert</span>
-        长按 ↕ 排序权重
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>

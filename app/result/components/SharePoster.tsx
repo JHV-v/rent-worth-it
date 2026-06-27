@@ -24,7 +24,7 @@ export default function SharePoster({ score, input, qrCodeUrl }: SharePosterProp
         <div className="relative space-y-8">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xl font-extrabold text-primary tracking-tight">RentScore AI</div>
+              <div className="text-xl font-extrabold text-primary tracking-tight">这房值不值</div>
               <div className="mt-1 text-sm font-medium text-on-surface-variant">租房性价比精细测算</div>
             </div>
             <div className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-primary shadow-sm">分享报告</div>
@@ -93,12 +93,12 @@ export default function SharePoster({ score, input, qrCodeUrl }: SharePosterProp
 
           <div className="flex items-center justify-between rounded-[28px] bg-white/90 p-5 shadow-sm ring-1 ring-white/80">
             <div>
-              <div className="text-lg font-black text-on-surface">扫码测测你的房租值不值</div>
+              <div className="text-lg font-black text-on-surface">扫码测测这房值不值</div>
               <div className="mt-1 text-sm font-medium text-on-surface-variant">别让房租偷走你的生活质量</div>
             </div>
             {qrCodeUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={qrCodeUrl} alt="RentScore AI 二维码" className="h-24 w-24 rounded-2xl bg-white p-2 shadow-sm" />
+              <img src={qrCodeUrl} alt="这房值不值 二维码" className="h-24 w-24 rounded-2xl bg-white p-2 shadow-sm" />
             ) : (
               <div className="h-24 w-24 rounded-2xl bg-stone-100" />
             )}

@@ -70,17 +70,17 @@ export default function HeaderSection() {
     <div className="text-center space-y-4">
       <div>
         <h1 className="text-headline-lg font-headline-lg text-on-surface tracking-tight">
-          租房性价比精细测算
+          这房值不值
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-          输入房屋数据，让我们从专业维度分析你的房屋是否合理
+          租房性价比精细测算 · Rent Worth It
         </p>
       </div>
       <div className="flex items-center justify-center gap-3 flex-wrap">
         <span className="bg-stone-100 text-stone-600 text-xs px-2.5 py-1 rounded-full font-medium">v1.6.0</span>
         <a
           className="hover:text-primary transition-colors flex items-center gap-0.5"
-          href="https://github.com/JHV-v/RentHouse--ver1.0.1"
+          href="https://github.com/JHV-v/rent-worth-it"
           target="_blank"
           rel="noopener noreferrer"
         >

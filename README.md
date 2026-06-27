@@ -1,6 +1,6 @@
-# 🏠 房租值不值 · Rent Worth It
+# 🏠 这房值不值 · Rent Worth It
 
-> 一个把租房性价比量化成可分享分数卡的小工具 · 中文用户优先 · AI 风格辣评
+> 给你的房子打分，不是给你的人生打分。专业算法 + 一点温度。
 
 [![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)](https://github.com/JHV-v/rent-worth-it/releases)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
@@ -8,28 +8,33 @@
 [![Tests](https://img.shields.io/badge/tests-123%20passed-brightgreen.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
-## 这是什么
+<!-- TODO: v1.6.x 域名上线后补充
+     建议放 2 张：主页输入截图（移动端竖屏） + 结果页核心区截图（桌面端横屏） -->
+<p align="center"><i>📸 截图占位 — 域名上线后补充</i></p>
 
-一个回答**"我现在租的房子到底值不值"**的小工具。
+## 为什么有它
 
-输入你的月薪、租金、通勤、居住条件，算法会从**房租、通勤、居住、生活**四个维度加权打分，再加上城市级别的修正和压力扣分，最后输出一个 0-100 的性价比分数 + AI 风格的辣评 + 可分享的精美海报。
+每个租房的人都问过自己同一个问题：**这房住着到底值不值？**
 
-不是房价数据库，不预测涨跌。**它是一面镜子**：帮你把"住得舒不舒服"这件主观的事系统化反思一遍。
+但"值"这个字太软了 —— 朋友说便宜，自己觉得通勤累，房东讲你看采光多好。情绪和数据搅在一起，最后只能凭感觉硬扛。
 
-## 在线体验
+这个工具想做一件事：把"住得舒不舒服"系统化一次。  
+**它不是房价数据库，不预测涨跌，也不替你做决定**。  
+它是一面镜子——你把房租、通勤、居住条件填进去，它从五个维度给你一份带温度的体检报告，然后你自己看着办。
+
+## 它能给你什么
+
+- 📊 **四维加权评分**：房租 / 通勤 / 居住 / 生活，再叠加城市修正和压力扣分，0-100 分一目了然
+- 🚌 **多通勤方式 + 疲惫度计算**：步行 / 骑行 / 公共交通 / 驾车独立计时，按出行方式叠加疲惫度系数
+- 🎭 **10 档 persona 文案**：从"天选之房"到"人间不值得"，根据总分给出一句调皮但不刻薄的总结（顺手附一段 AI 风的辣评）
+- 🎨 **可分享海报**：基于结果页生成 PNG 卡片，二维码 + slogan，一键保存发朋友圈
+- 💾 **sessionStorage 续填 + Redis 访问统计**：刷新不丢数据，独立访客有据可查
+- 📱 **响应式设计**：移动端 / 桌面端均可用，触屏拖拽排序通勤方式
+
+## 在线试一下
 
 - 🚧 域名审核中：`https://jhx1ng.me`（备案完成后启用）
 - 临时入口：`http://117.72.219.13:3000`
-
-## 核心功能
-
-- 📊 **四维加权评分**：房租 / 通勤 / 居住 / 生活，每个维度可单独配置权重
-- 🚌 **多通勤方式**：公共交通 / 自驾 / 步行 / 骑行，每种方式独立计时 + 权重排序
-- 🎭 **persona 文案**：根据分数与城市层级动态切换 "佛系打工人 / 体面青年 / 都市精英 / 都市梦想家"
-- 🎨 **可分享海报**：基于结果页生成 PNG 卡片，二维码 + slogan + 一键保存
-- 🤖 **AI 风格辣评**：根据评分自动生成生活吐槽，不刻意暖
-- 💾 **本地存储 + 远程访问计数**：sessionStorage 保留填写记录、Redis 统计独立访客
-- 📱 **响应式设计**：移动端 / 桌面端均可用，触屏拖拽排序通勤方式
 
 ## 技术栈
 
@@ -40,8 +45,8 @@
 | 样式 | Tailwind CSS 3 |
 | 交互 | @dnd-kit（拖拽排序）|
 | 图片导出 | html2canvas + qrcode |
-| 数据 | Redis（ioredis）+ localStorage 降级 |
-| 测试 | Vitest |
+| 数据 | Redis（ioredis）+ sessionStorage 续填 |
+| 测试 | Vitest（123 个用例） |
 | 部署 | PM2 + Nginx + 京东云 ECS |
 | CI/CD | GitHub Actions + Gitee 国内镜像 |
 
@@ -50,85 +55,59 @@
 ```
 app/
 ├── page.tsx                    # 输入页
-├── result/page.tsx             # 结果页
-├── components/                 # 输入页组件
+├── layout.tsx                  # 根布局 / metadata
+├── result/
+│   ├── page.tsx                # 结果页
+│   └── components/             # 结果页专属组件
+│       ├── HeroSection.tsx
+│       ├── EvaluationSection.tsx
+│       ├── ProsConsSection.tsx
+│       ├── AIRoastSection.tsx
+│       ├── SharePoster.tsx     # 分享海报
+│       └── ...
+├── components/                 # 全局共享组件
 │   ├── RentForm.tsx
 │   ├── HeaderSection.tsx
-│   ├── BasicInfoFields.tsx
-│   ├── TagSelectGroup.tsx
 │   ├── CommuteInput.tsx
 │   └── ...
-├── result/components/          # 结果页组件
-│   ├── HeroSection.tsx
-│   ├── EvaluationSection.tsx
-│   ├── ProsConsSection.tsx
-│   ├── AIRoastSection.tsx
-│   ├── SharePoster.tsx         # 分享海报
-│   └── ...
-├── lib/
-│   ├── score.ts                # 评分算法
+├── lib/                        # 业务逻辑（测试就近放置）
+│   ├── score/                  # v1.6.0 评分子模块
+│   │   ├── index.ts            #   主入口
+│   │   ├── types.ts            #   类型定义
+│   │   ├── constants.ts        #   权重 / 城市修正 / 分段
+│   │   ├── normalize.ts        #   输入标准化
+│   │   ├── rent.ts             #   房租分段函数
+│   │   ├── commute.ts          #   通勤双层判断
+│   │   ├── housing.ts          #   居住分 7 维加权
+│   │   ├── life.ts             #   生活分 3 维加权
+│   │   ├── stress.ts           #   压力扣分
+│   │   └── *.test.ts           #   单元测试就近
 │   ├── adapter.ts              # 表单 → 评分输入
-│   ├── personas.ts             # persona 切换
-│   ├── resultText.ts           # 结果页文案
-│   ├── storage.ts              # sessionStorage 封装
+│   ├── personas.ts             # 10 档 persona
+│   ├── resultText.ts           # 结果页文案 / 辣评生成
+│   ├── storage.ts              # sessionStorage 续填
 │   ├── visitCounter.ts         # 访问计数客户端
 │   └── redis.ts                # Redis 单例
 └── api/
-    └── visit-count/route.ts    # 访问计数 API
+    └── visit-count/route.ts    # 访问计数 API（含 IP 限流）
+
+docs/                           # 文档归档
+├── DEPLOYMENT.md
+└── design/                     # 设计稿
+
+scripts/
+└── sync-version.mjs            # 版本号自动同步
 ```
 
-## 本地运行
+## 本地跑起来
 
 ```bash
-# 安装依赖
-npm install
-
-# 启动开发服务器（默认 3000，被占用会自动找空端口）
-npm run dev
-
-# 运行测试
-npm run test
-
-# 类型检查
-npm run typecheck
-
-# 生产构建
-npm run build
-npm run start
+npm install          # 安装依赖
+npm run dev          # 启动开发服务器（默认 3000）
+npm run test         # 跑 123 个测试
+npm run typecheck    # 类型检查
+npm run build        # 生产构建
 ```
-
-## 环境变量
-
-| 变量名 | 必填 | 说明 |
-|--------|------|------|
-| `REDIS_URL` | 否 | Redis 连接串。不配则降级到 localStorage |
-| `NEXT_PUBLIC_SITE_ORIGIN` | 否 | 用于 `/api/visit-count` 的 Origin 校验，多个用逗号分隔 |
-
-详见 [.env.example](./.env.example)。
-
-## 发版
-
-版本号语义化管理，**由开发者决定大中小**：
-
-```bash
-npm run release:patch    # 1.0.1 → 1.0.2（bug 修复）
-npm run release:minor    # 1.0.2 → 1.1.0（新功能）
-npm run release:major    # 1.1.0 → 2.0.0（破坏性变更）
-```
-
-会自动同步 `package.json` 与 `HeaderSection.tsx` 的版本号、commit、打 tag。
-
-## 部署
-
-详见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
-
-`git push` 到 `main` 触发 GitHub Actions：
-
-1. 调用 Gitee API 强制同步 GitHub 最新代码
-2. SSH 到京东云服务器
-3. 执行 `git pull && npm install && npm run build && pm2 restart`
-
-约 2-3 分钟后线上自动更新。
 
 ## 评分算法简介
 
@@ -138,15 +117,14 @@ npm run release:major    # 1.1.0 → 2.0.0（破坏性变更）
      + 居住分 × 0.25
      + 生活分 × 0.20
      + 城市加成
-     - 压力扣分
+     - 压力扣分 × 0.10
 ```
 
-- **房租分**：基于 (月租 / 月薪) 比值，行业拐点 30%、警戒线 50%
-- **通勤分**：按多种通勤方式加权计算综合时长，超过 60 分钟开始扣分
-- **居住分**：采光、隔音、楼层、家电、卫浴、厨房等具体维度评估
-- **生活分**：周边便利度 + 生活小细节
-- **城市加成**：一线 / 新一线 / 二线 / 三线及以下 分级调整
-- **压力扣分**：通勤压力 + 合租摩擦的隐性成本
+- **房租分**：分段函数 + 城市修正。整租基准 30%、合租基准 35%，一线 / 新一线 / 二线 / 三线及以下分别叠加 +8 / +4 / 0 / -4 的容忍度
+- **通勤分**：双层判断。基础分 `100 × exp(-疲惫度 / 60)`（按出行方式叠加疲惫度系数），再叠加总时长奖惩（短通勤 +5 / 长通勤 -10 / 极端 -25）
+- **居住分**：7 维加权（采光 0.22 / 噪音 0.20 / 卫浴 0.16 / 房况 0.15 / 厨房 0.12 / 楼层 0.10 / 水电 0.05）
+- **生活分**：3 维加权（空间 0.40 / 食 0.30 / 设施 0.30）
+- **压力扣分**：房租超 20% 部分 × 1.5、通勤超 30 分钟部分 × 0.4、低收入惩罚、合租摩擦、城市等级修正
 
 详细公式见 [app/lib/score/](./app/lib/score/) 与就近的测试文件（`*.test.ts`）。
 
@@ -163,9 +141,12 @@ npm run release:major    # 1.1.0 → 2.0.0（破坏性变更）
 - [ ] v1.8.0 — 分享预览模态框 / 海报差异化模板
 - [ ] v2.0.0 — 接入真实房价数据（贝壳/链家 API）
 
-## 变更记录
+## 工程参考
 
-详见 [CHANGELOG.md](./CHANGELOG.md)。
+- 📝 [变更记录 CHANGELOG.md](./CHANGELOG.md)
+- 🚀 [部署说明 docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
+- ⚙️ [环境变量 .env.example](./.env.example)
+- 🐛 [报告 bug](./.github/ISSUE_TEMPLATE/bug_report.md) / 💡 [建议功能](./.github/ISSUE_TEMPLATE/feature_request.md) / 🔀 [提交 PR](./.github/pull_request_template.md)
 
 ## License
 

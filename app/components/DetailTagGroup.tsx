@@ -5,9 +5,11 @@ interface DetailTagGroupProps {
   options: string[]
   values: string[]
   onChange: (values: string[]) => void
+  /** 是否隐藏可见 label（仍保留给屏幕阅读器） */
+  hideLabel?: boolean
 }
 
-export default function DetailTagGroup({ label, options, values, onChange }: DetailTagGroupProps) {
+export default function DetailTagGroup({ label, options, values, onChange, hideLabel }: DetailTagGroupProps) {
   const toggle = (opt: string) => {
     if (values.includes(opt)) {
       onChange(values.filter((v) => v !== opt))
@@ -17,8 +19,10 @@ export default function DetailTagGroup({ label, options, values, onChange }: Det
   }
 
   return (
-    <div className="space-y-3">
-      <label className="font-label-md text-label-md text-on-surface-variant">{label}</label>
+    <div className="space-y-3" role="group" aria-label={label}>
+      {!hideLabel && (
+        <label className="font-label-md text-label-md text-on-surface-variant">{label}</label>
+      )}
       <div className="flex flex-wrap gap-2.5">
         {options.map((opt) => {
           const isActive = values.includes(opt)

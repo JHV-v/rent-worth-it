@@ -31,9 +31,12 @@ const FLOOR_OPTIONS = ['电梯房', '低层步梯(1-3)', '中层步梯(4-5)', '�
 const APPLIANCE_OPTIONS = ['齐全且新', '刚好够用', '破旧老化', '纯毛坯房']
 const BATHROOM_OPTIONS = ['独立卫浴', '双人共卫', '多人共卫']
 const KITCHEN_OPTIONS = ['不做饭', '偶尔排队', '经常排队', '基本自由使用']
+// v1.6.4：生活小细节 12 项重设，避开已有维度（采光/通风/隔音/便利/家电/楼层/卫浴/通勤/合同）
+// 每勾 1 项 ≈ +0.43 总分（happiness.ts clamp 上限 12，不要随意增减数量，否则需重校 9 场景基线）
 const DETAIL_OPTIONS = [
-  '宠物友好', '晾晒方便', '有阳台', '快递方便', '外卖方便', '晚上安静',
-  '隔壁不吵', '电梯稳定', '附近便利店多', '适合居家办公', '收纳空间够', '小区安全感好',
+  '房东沟通顺畅', '报修响应及时', '网速够用',     '手机信号稳定',
+  '储物空间够',   '小区秩序好',   '快递站点方便', '房屋无异味虫害',
+  '视野开阔不压抑', '周边夜间安全', '小区有绿化空间', '卫生间布局合理',
 ]
 
 // ============================================================
@@ -266,20 +269,23 @@ export default function RentForm({ initialData, onSubmit, errorMessage, onClearE
         <div className="h-px bg-stone-100" />
 
         {/* 生活小细节 */}
-        <section className="p-8 space-y-10">
+        <section className="p-8 space-y-6">
           <div className="flex items-center gap-2 pb-2 border-b border-stone-50">
             <span className="material-symbols-outlined text-primary">tips_and_updates</span>
             <h2 className="font-headline-sm text-headline-sm text-on-surface">生活小细节</h2>
           </div>
+          <p className="text-sm text-on-surface-variant leading-relaxed">
+            <span className="material-symbols-outlined text-sm align-middle mr-1 text-amber-500">info</span>
+            勾选越如实，幸福度分数越准。这部分会进入「幸福维度」参与最终评分，不要漏选也别凑数。
+          </p>
 
-          <div className="space-y-6">
           <DetailTagGroup
             label="生活小细节"
+            hideLabel
             options={DETAIL_OPTIONS}
             values={form.activeOptions['生活小细节'] ?? []}
             onChange={(v) => updateOption('生活小细节', v)}
           />
-          </div>
         </section>
 
         <div className="h-px bg-stone-100" />

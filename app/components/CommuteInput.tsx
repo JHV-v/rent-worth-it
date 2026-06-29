@@ -77,6 +77,9 @@ function SortableItem({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    // v1.6.4：拖拽期间提示浏览器走 GPU 合成层，避免布局抖动卡顿（移动端尤其明显）
+    willChange: isDragging ? ('transform' as const) : undefined,
+    touchAction: 'pan-y' as const,
   }
 
   const minutes = parseInt(item.minutes, 10) || 0
@@ -87,17 +90,17 @@ function SortableItem({
       ref={setNodeRef}
       style={style}
       className={`draggable-item flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-surface-container-low rounded-xl border border-outline-variant/30 transition-all ${
-        isDragging ? 'scale-[1.02]' : ''
+        isDragging ? 'scale-[1.02] shadow-lg' : ''
       }`}
     >
       <button
         type="button"
         aria-label="拖动排序"
-        className="cursor-grab active:cursor-grabbing text-on-surface-variant touch-none p-1 -m-1"
+        className="cursor-grab active:cursor-grabbing text-on-surface-variant touch-none p-2 -m-1 select-none"
         {...attributes}
         {...listeners}
       >
-        <span className="material-symbols-outlined">drag_indicator</span>
+        <span className="material-symbols-outlined pointer-events-none">drag_indicator</span>
       </button>
       <span className={`material-symbols-outlined text-primary`}>{COMMUTE_ICONS[item.label]}</span>
       <label htmlFor={inputId} className="font-label-md text-label-md text-on-surface min-w-[48px] sm:min-w-[60px]">
@@ -137,9 +140,13 @@ export default function CommuteInput({ times, order, onTimesChange, onOrderChang
     minutes: times[label] ?? '',
   }))
 
+  // v1.6.4：拖动手感优化
+  // - PointerSensor distance 5→3：桌面端更灵敏
+  // - TouchSensor 改用 distance（取代 delay 200ms）：移动端按下立即响应，避免按住等待的延迟感
+  //   listeners 只挂在拖动手柄按钮上（已带 touch-none），不会拦截 list 外的滚动手势
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
+    useSensor(TouchSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 

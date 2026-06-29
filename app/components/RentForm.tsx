@@ -17,10 +17,24 @@ const CITY_TYPES = ['一线', '新一线', '二线', '三线及以下']
 const HOUSING_TYPES = ['整租一居', '整租二居', '合租主卧', '合租次卧']
 const UTILITY_TYPES = ['民水民电', '商水商电']
 const SUNLIGHT_OPTIONS = ['阳光大满贯', '中规中矩', '常年小黑屋']
+// v1.6.4：采光通风 3 档语义化配色（暖→中性→冷），让选中状态更直观
 const SUNLIGHT_ICONS = [
-  { icon: 'wb_sunny', color: 'text-amber-500' },
-  { icon: 'cloud', color: 'text-slate-400' },
-  { icon: 'nights_stay', color: 'text-indigo-500' },
+  {
+    icon: 'wb_sunny',
+    color: 'text-amber-500',
+    activeClass: 'bg-amber-100 text-amber-800 ring-amber-300 shadow-amber-200/60 border-amber-200',
+  },
+  {
+    icon: 'cloud',
+    color: 'text-slate-400',
+    activeClass: 'bg-stone-300 text-stone-800 ring-stone-500 shadow-stone-400/60 border-stone-400',
+  },
+  {
+    icon: 'nights_stay',
+    color: 'text-indigo-500',
+    activeClass: 'bg-indigo-900 text-indigo-100 ring-indigo-700 shadow-indigo-900/60 border-indigo-800',
+    activeIconColor: 'text-amber-200',
+  },
 ]
 const NOISE_OPTIONS = ['极其安静', '偶尔噪音', '隔音极差']
 // v1.6.3 D5/D12b：周边便利度拆成"商超 / 餐饮 / 医疗"3 个独立维度，每个 3 档
@@ -270,14 +284,15 @@ export default function RentForm({ initialData, onSubmit, errorMessage, onClearE
 
         {/* 生活小细节 */}
         <section className="p-8 space-y-6">
-          <div className="flex items-center gap-2 pb-2 border-b border-stone-50">
-            <span className="material-symbols-outlined text-primary">tips_and_updates</span>
-            <h2 className="font-headline-sm text-headline-sm text-on-surface">生活小细节</h2>
+          <div className="pb-2 border-b border-stone-50">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">tips_and_updates</span>
+                <h2 className="font-headline-sm text-headline-sm text-on-surface">生活小细节</h2>
+              </div>
+              <span className="text-xs text-on-surface-variant/80">如实勾选 · 会进入「幸福维度」参与评分</span>
+            </div>
           </div>
-          <p className="text-sm text-on-surface-variant leading-relaxed">
-            <span className="material-symbols-outlined text-sm align-middle mr-1 text-amber-500">info</span>
-            勾选越如实，幸福度分数越准。这部分会进入「幸福维度」参与最终评分，不要漏选也别凑数。
-          </p>
 
           <DetailTagGroup
             label="生活小细节"

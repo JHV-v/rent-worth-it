@@ -41,7 +41,7 @@ const config: Config = {
         'error-container': '#ffdad6',
         'on-secondary-fixed': '#191c1e',
         'on-background': '#0b1c30',
-        primary: '#0058be',
+        primary: '#4f46e5',
         'secondary-fixed-dim': '#c4c7c9',
         'surface-dim': '#cbdbf5',
         'on-primary-fixed-variant': '#004395',

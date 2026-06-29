@@ -98,6 +98,32 @@ scripts/sync-version.mjs            package.json → HeaderSection.tsx badge 同
 - **服务器调试遇到 fallback:true 时**：先 curl `/api/visit-count/health` 看 redis 字段是 `ok` / `not_configured` / `connect_failed` / `ping_failed`，对应排查见 [docs/VISIT-COUNTER.md](./docs/VISIT-COUNTER.md)
 - **时区强制 Asia/Shanghai**：日期相关用 [`app/lib/dateUtils.ts`](./app/lib/dateUtils.ts) 而不是 `new Date()` 直接拿
 
+### 设计 / UI 层（v1.6.4 沉淀，必读）
+
+**配色 — 用户审美偏好**：
+- 当前 `primary = #4f46e5`（indigo-600，Tailwind / Stripe / Notion 同款）是**用户多轮迭代后确认的**：
+  - ❌ 不要：偏冷的深蓝（#0058be，被评"重"）/ 灰调（slate-600 被评"死气沉沉"）/ 鲜艳玫粉（rose-700 被评"太亮"）/ 暗灰（stone-700 被评"没活力"）/ 偏老气的 sky-700（被评"土气"）
+  - ✅ 选定理由：素雅 + 有活力 + 实用辨识度 三者并存
+- **如果用户再说"不好看"**：先问偏好（素雅 / 活力 / 商务 / 复古 / 年轻），不要盲目换色相。常见冲突：
+  - "素雅" + "有活力" → 不能用纯灰，需要"有色相的中间色"
+  - "美观优雅" ≠ "克制极简" → 优雅意味着"有品味的色彩选择"，不是"无色"
+- **段落式按钮**（segmented）**不要堆多种语义色**，会显乱。多色差异化只在 grid 卡片（独立按钮、间距大）里做，例如 [采光通风 3 档](file:///e:/Vibe%20Coding/%E7%A7%9F%E6%88%BFver1.0.0/app/components/RentForm.tsx)（暖琥珀 / 中性 / 深夜靛蓝 + icon 适配色）
+- 选中态保持**实心填充 + medium 阴影**（`shadow-md shadow-primary/25`），不要走"10% 透明底"路线（用户评"看不到选中"）
+
+**生活小细节 12 项设计原则**：
+- **数量恒为 12**：[happiness.ts](file:///e:/Vibe%20Coding/%E7%A7%9F%E6%88%BFver1.0.0/app/lib/score/happiness.ts) `lifeDetailsScore = count × 100 / 12`，clamp 上限 12，**改数量需重校 9 场景集成基线**
+- **必须避开已有维度**：采光 / 通风 / 隔音 / 商超 / 餐饮 / 医疗 / 家电 / 楼层 / 卫浴 / 厨房 / 通勤 / 合同 — 这些都已经独立打分，不要在生活细节里重复
+- **看房或签约阶段可验证**：不依赖入住后体验（押金退回 / 邻居关系等不算）
+- **不个性化**：不要"可养宠物"、"可同住朋友/情侣"这类只对部分人群有意义的
+- **不基本要求**：不要"门窗能正常关"这类房子本来就该有的
+- **不政策不普及**：不要"智能门锁"、"电动车充电"这类不普及或太具体的
+- 当前 12 项（v1.6.4 v10 终稿）：房东沟通顺畅 / 报修响应及时 / 网速够用 / 手机信号稳定 / 储物空间够 / 小区秩序好 / 快递站点方便 / 房屋无异味虫害 / 视野开阔不压抑 / 周边夜间安全 / 小区有绿化空间 / 卫生间布局合理
+
+**交互手感**：
+- **@dnd-kit TouchSensor 用 `distance: 5` 不用 `delay`**（v1.6.4）：移动端按下立即响应，避免 200ms 延迟感。配合 `touch-action: pan-y` + `will-change: transform` 让拖拽走 GPU 合成层
+- **section 提示文案**：放在 section 标题右边、用 `items-baseline` 对齐基线，**不要单独成一个卡片**（用户评"糊在那里不美观"）。示例见 [RentForm 生活小细节 section](file:///e:/Vibe%20Coding/%E7%A7%9F%E6%88%BFver1.0.0/app/components/RentForm.tsx)
+- **段落式按钮的 `accents` prop 已支持但不要乱用**：除非有强语义需求（如三色信号灯），否则保持紫主调一致性
+
 ## 六、常用命令
 
 ```bash
@@ -150,9 +176,13 @@ curl http://localhost:3000/api/visit-count/health  # ⭐ 验证关键
 - ❌ 不要在不知道改动影响时直接 `git push`
 - ❌ 不要给 score 算法加"为了过测试而存在"的特例
 - ❌ 不要在通勤/居住区加重复角标（用户对 UI 重复非常敏感）
+- ❌ 不要在 segmented 按钮组里堆 3 种以上语义色（v1.6.4 教训，用户评"混乱"）
+- ❌ 不要把"看不见的好坏"作为 lifeDetails 选项（如押金能否退回 / 邻居关系等），用户**当下能否验证**才是底线
+- ❌ 不要为了"克制简约"把选中态做成 10% 透明底 — 失去辨识度（v1.6.4 教训）
 
 ## 八、当前路线图（v1.6.3 之后）
 
+- **v1.6.4**（已完成）：UI 抛光 —— 通勤拖动手感 / 生活细节 12 项重设 / 采光通风 grid 语义色 / primary 改 `#4f46e5` 靛紫蓝
 - **v1.7.0**（中）：`DiagnosticsModal` —— 结果页消费 `*Feature.weakest` / `strongest` 数据，展示各维度短板/亮点详情；方法论页 `/methodology`、AI 辣评扩充、persona 个性化标签、一句日记
 - **v1.8.0**（中）：分享预览模态框、海报差异化模板
 - **v2.0.0**（大，远期）：接入真实房价数据（贝壳/链家 API）

@@ -111,7 +111,7 @@ export default function HeaderSection() {
         </p>
       </div>
       <div className="flex items-center justify-center gap-3 flex-wrap">
-        <span className="bg-stone-100 text-stone-600 text-xs px-2.5 py-1 rounded-full font-medium">v1.6.1</span>
+        <span className="bg-stone-100 text-stone-600 text-xs px-2.5 py-1 rounded-full font-medium">v1.6.3</span>
         <a
           className="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-0.5 text-sm"
           href="https://github.com/JHV-v/rent-worth-it"

@@ -8,9 +8,40 @@
 ## [Unreleased]
 
 ### Planned
-- v1.6.2：`ScoreResult.diagnostics` 字段、合同期加成、楼层内在评分映射
-- v1.7.0：方法论页 `/methodology`、AI 辣评扩充、persona 个性化标签、一句日记
+- v1.7.0：`DiagnosticsModal`（结果页消费 `*Feature.weakest`/`strongest` 展示短板/亮点详情）
+- v1.7.0+：方法论页 `/methodology`、AI 辣评扩充、persona 个性化标签、一句日记
 - v1.8.0：分享预览模态框、海报差异化模板
+
+---
+
+## [1.6.3] - 2026-06-29
+
+### Changed (算法重构，破坏性更新)
+- **总分公式重构**：从"4 维加权 + 城市加成 - 压力扣分"改为 **价值/成本** 公式：`baseScore = value × 0.65 + (100 - cost) × 0.35`
+- **6 维特征向量**：原 4 个数值字段 `commuteScore`/`liveScore`/`lifeScore`/`stress` 升级为 6 个 `DimensionFeature`（`rentFeature`/`commuteFeature`/`liveFeature`/`lifeFeature`/`stressFeature`/`happinessFeature`），每个含 `mainScore + weakest + strongest`，为 v1.7 DiagnosticsModal 奠基
+- **短板惩罚**：任一维度 `mainScore < 30` 时按 `(30 - score) × 0.3` 扣总分，极端贫困场景可归零
+- **D1 city 拆分**：原 `cityModifier` 拆为 `cityBenefit`（进 value）/ `cityBurden`（进 cost），更贴近"一线 = 高溢价 + 高成本"现实
+- **D5/D12b 便利度拆分**：原"周边便利度"单字段拆为 **商超便利 / 餐饮便利 / 医疗便利** 3 个独立子项
+- **D12a 楼层 4 档**：`电梯房 / 低层步梯(1-3) / 中层步梯(4-5) / 高层步梯(6+)`
+- **D12c 房租 exp 衰减**：`RENT_DECAY = 15`
+- **D12d 通勤对称 bonus**：`+10 / 0 / -10 / -20` 四档奖惩
+- **合同期 contractTerm**：`半年 / 1年 / 2年+`，进 happiness 维度
+- **lifeDetails**：0-12 项生活细节多选，进 happiness 维度
+
+### Added
+- 新增 `app/lib/score/happiness.ts` 幸福维度计算（合同期 + lifeDetails）
+- 新增 `app/lib/score/integration.test.ts` 9 场景集成测试，锁定 `expectedTotal ± 2` 调参基线
+- `sessionStorage` 版本机制升级 `2 → 3`，旧楼层 3 档自动迁移到新 4 档
+
+### Removed
+- 删除所有 `@deprecated` 兼容字段：`commuteScore` / `liveScore` / `lifeScore` / `stress` / `subway` / `food` / `facilities`
+- 删除 `WEIGHTS` / `RENT_SEGMENTS` 常量与对应 re-export
+- 删除 `adapter.ts` 中无用的 `APPLIANCE_MAP` / `mapAppliance` / `hasSubwayAccess`
+
+### Internal
+- 5 阶段实施（P1 类型 → P2 测试重写 → P3 输入层 → P4 UI 层 → P5 清理），每阶段独立验证
+- 测试覆盖：**140 passed / 1 skipped**（从 123 个升级）
+- 完整 plan + 16 个 ADR 见 [docs/v1.6.3-algorithm-refactor.md](./docs/v1.6.3-algorithm-refactor.md)（1399 行）
 
 ---
 

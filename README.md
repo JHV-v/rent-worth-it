@@ -2,10 +2,10 @@
 
 > 给你的房子打分，不是给你的人生打分。专业算法 + 一点温度。
 
-[![Version](https://img.shields.io/badge/version-1.6.1-blue.svg)](https://github.com/JHV-v/rent-worth-it/releases)
+[![Version](https://img.shields.io/badge/version-1.6.3-blue.svg)](https://github.com/JHV-v/rent-worth-it/releases)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/tests-123%20passed-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/badge/tests-140%20passed-brightgreen.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
 <!-- TODO: v1.6.x 域名上线后补充
@@ -24,7 +24,7 @@
 
 ## 它能给你什么
 
-- 📊 **四维加权评分**：房租 / 通勤 / 居住 / 生活，再叠加城市修正和压力扣分，0-100 分一目了然
+- 📊 **六维特征向量评分**：房租 / 通勤 / 居住 / 生活 / 压力 / 幸福 六个维度，每维输出 `mainScore + weakest + strongest`，价值/成本公式合成 0-100 分
 - 🚌 **多通勤方式 + 疲惫度计算**：步行 / 骑行 / 公共交通 / 驾车独立计时，按出行方式叠加疲惫度系数
 - 🎭 **10 档 persona 文案**：从"天选之房"到"人间不值得"，根据总分给出一句调皮但不刻薄的总结（顺手附一段 AI 风的辣评）
 - 🎨 **可分享海报**：基于结果页生成 PNG 卡片，二维码 + slogan，一键保存发朋友圈
@@ -46,7 +46,7 @@
 | 交互 | @dnd-kit（拖拽排序）|
 | 图片导出 | html2canvas + qrcode |
 | 数据 | Redis（ioredis）+ sessionStorage 续填 |
-| 测试 | Vitest（123 个用例） |
+| 测试 | Vitest（140 个用例） |
 | 部署 | PM2 + Nginx + 京东云 ECS |
 | CI/CD | GitHub Actions + Gitee 国内镜像 |
 
@@ -71,16 +71,19 @@ app/
 │   ├── CommuteInput.tsx
 │   └── ...
 ├── lib/                        # 业务逻辑（测试就近放置）
-│   ├── score/                  # v1.6.0 评分子模块
-│   │   ├── index.ts            #   主入口
-│   │   ├── types.ts            #   类型定义
-│   │   ├── constants.ts        #   权重 / 城市修正 / 分段
+│   ├── score/                  # v1.6.3 评分子模块
+│   │   ├── index.ts            #   主入口（calculateScore）
+│   │   ├── types.ts            #   类型定义（DimensionFeature / ScoreResult）
+│   │   ├── constants.ts        #   权重 / 城市修正 / 楼层档位
+│   │   ├── utils.ts            #   buildFeature 等公共工具
 │   │   ├── normalize.ts        #   输入标准化
-│   │   ├── rent.ts             #   房租分段函数
-│   │   ├── commute.ts          #   通勤双层判断
+│   │   ├── rent.ts             #   房租 exp 衰减
+│   │   ├── commute.ts          #   通勤双层判断 + 对称 bonus
 │   │   ├── housing.ts          #   居住分 7 维加权
-│   │   ├── life.ts             #   生活分 3 维加权
-│   │   ├── stress.ts           #   压力扣分
+│   │   ├── life.ts             #   生活分（商超/餐饮/医疗 3 子项）
+│   │   ├── stress.ts           #   压力维度
+│   │   ├── happiness.ts        #   幸福维度（合同期 + lifeDetails）
+│   │   ├── integration.test.ts #   9 场景集成测试（基线锁定）
 │   │   └── *.test.ts           #   单元测试就近
 │   ├── adapter.ts              # 表单 → 评分输入
 │   ├── personas.ts             # 10 档 persona
@@ -104,7 +107,7 @@ scripts/
 ```bash
 npm install          # 安装依赖
 npm run dev          # 启动开发服务器（默认 3000）
-npm run test         # 跑 123 个测试
+npm run test         # 跑 140 个测试
 npm run typecheck    # 类型检查
 npm run build        # 生产构建
 ```
@@ -112,21 +115,22 @@ npm run build        # 生产构建
 ## 评分算法简介
 
 ```
-总分 = 房租分 × 0.30
-     + 通勤分 × 0.25
-     + 居住分 × 0.25
-     + 生活分 × 0.20
-     + 城市加成
-     - 压力扣分 × 0.10
+baseScore  = value × 0.65 + (100 - cost) × 0.35
+totalScore = baseScore - 短板惩罚    (任一维度 mainScore < 30 时按 (30 - score) × 0.3 扣分)
+
+value      包含 房租价值 / 通勤价值 / 居住价值 / 生活价值 / 幸福价值 / cityBenefit
+cost       包含 压力成本 / cityBurden
 ```
 
-- **房租分**：分段函数 + 城市修正。整租基准 30%、合租基准 35%，一线 / 新一线 / 二线 / 三线及以下分别叠加 +8 / +4 / 0 / -4 的容忍度
-- **通勤分**：双层判断。基础分 `100 × exp(-疲惫度 / 60)`（按出行方式叠加疲惫度系数），再叠加总时长奖惩（短通勤 +5 / 长通勤 -10 / 极端 -25）
-- **居住分**：7 维加权（采光 0.22 / 噪音 0.20 / 卫浴 0.16 / 房况 0.15 / 厨房 0.12 / 楼层 0.10 / 水电 0.05）
-- **生活分**：3 维加权（空间 0.40 / 食 0.30 / 设施 0.30）
-- **压力扣分**：房租超 20% 部分 × 1.5、通勤超 30 分钟部分 × 0.4、低收入惩罚、合租摩擦、城市等级修正
+- **6 维特征向量（DimensionFeature）**：`rent / commute / live / life / stress / happiness`，每维输出 `mainScore + weakest + strongest`，为结果页诊断展示奠基
+- **房租维度**：exp 衰减（`RENT_DECAY = 15`），租金占收入超基线分数按指数下滑
+- **通勤维度**：基础分 `100 × exp(-疲惫度 / 60)` + 对称 bonus（短 +10 / 中 0 / 长 -10 / 极端 -20）
+- **居住维度**：7 维加权（采光 / 噪音 / 卫浴 / 房况 / 厨房 / 楼层 4 档 / 水电）
+- **生活维度**：3 独立子项（商超便利 / 餐饮便利 / 医疗便利）+ 空间
+- **幸福维度**：合同期（半年 / 1 年 / 2 年+）+ lifeDetails 0-12 项细节
+- **城市拆分**：原 `cityModifier` 拆为 `cityBenefit`（进 value）/ `cityBurden`（进 cost），更贴近"一线 = 高溢价 + 高成本"现实
 
-详细公式见 [app/lib/score/](./app/lib/score/) 与就近的测试文件（`*.test.ts`）。
+详细公式与 16 个 ADR 见 [docs/v1.6.3-algorithm-refactor.md](./docs/v1.6.3-algorithm-refactor.md) 与就近的测试文件（`app/lib/score/*.test.ts` / `integration.test.ts`）。
 
 ## 路线图
 
@@ -137,8 +141,8 @@ npm run build        # 生产构建
 - [x] v1.5.0 — **质量大升级**：访问计数限流、时区统一、a11y、字体本地化、Redis 单例容错、CI 加测试 / 类型检查、安全 headers、SharePoster 延迟挂载
 - [x] v1.6.0 — **算法核心升级**：房租分段函数、通勤双层判断、居住分 7 维加权、生活分 3 维加权
 - [x] v1.6.1 — **访问计数稳定化**：health 自检接口 + ping 预检 + 1.5s 超时 + 自动重试 + 三态 UI + 修 Redis 冷启动 race condition
-- [ ] v1.6.2 — `ScoreResult.diagnostics` 字段 / 合同期加成 / 楼层评分映射
-- [ ] v1.7.0 — 方法论页 `/methodology` / AI 辣评扩充 / persona 个性化标签 / 一句日记
+- [x] v1.6.3 — **算法重构（破坏性）**：6 维特征向量、value/cost 公式、短板惩罚、D1 city 拆分、便利度 3 子项、楼层 4 档、合同期 / lifeDetails、9 场景集成基线（140 测试通过）
+- [ ] v1.7.0 — `DiagnosticsModal`（消费 `*Feature.weakest`/`strongest` 展示短板/亮点详情）、方法论页 `/methodology`、AI 辣评扩充、persona 个性化标签、一句日记
 - [ ] v1.8.0 — 分享预览模态框 / 海报差异化模板
 - [ ] v2.0.0 — 接入真实房价数据（贝壳/链家 API）
 

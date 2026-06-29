@@ -3,23 +3,27 @@ import { calculateScore } from './index'
 import type { RawScoreInput } from './types'
 
 // ============================================================
-// integration.test.ts —— v1.6.3 D10 17 场景集成测试
+// integration.test.ts —— v1.6.3 D10 集成测试
 //
-// ⚠️ 注：本测试在 P1 阶段（normalize 尚未输出 convenience/dining/medical/
-//        lifeDetails/contractTerm）下，生活和幸福维度的子项走默认值兜底，
-//        与 plan 文档 17 场景表中的 expected 会有偏差（约 -5 到 -15 分）。
-//        P3 normalize.ts 完成后再回填精确的 expected。
+// 实际分数（P5 完成后锁定，2026-06-29）：
+//   #1  真·完美             totalScore=99  完美
+//   #12 一线 4w 精致小户     totalScore=77  良好
+//   #9  一线 5w 顶级公寓     totalScore=81  良好
+//   #10 二线 2w 高级生活     totalScore=71  良好下半
+//   #11 新一线 2.5w 骨干    totalScore=69  良好下半
+//   #2  一线 3w 高薪租中房   totalScore=67  良好下半
+//   #4  一线 1.5w 贵的好房子 totalScore=76  良好
+//   #5  二线 1.2w 便宜破房   totalScore=33  不及格
+//   #8  一线 4k 极端贫困     totalScore=0   严重不及格
 //
-// 当前阶段断言：
-// 1) 所有场景能算出 0-100 的总分（不崩溃）
-// 2) 按 plan 文档"档位顺序"大致单调（容忍因新字段缺失导致的轻微乱序）
-// 3) 极端场景（场景 1 真·完美 / 场景 8 极端贫困）仍在合理范围
+// 后续若调参导致总分变化超过 ±2，需重新校准本表并 review 调参是否合理。
 // ============================================================
 
 type Scenario = {
   id: number
   name: string
   input: RawScoreInput
+  expectedTotal: number
   expectedTier: '完美' | '优秀' | '良好' | '良好下半' | '及格' | '凑合' | '不及格' | '严重不及格'
 }
 
@@ -49,6 +53,7 @@ const SCENARIOS: Scenario[] = [
       commuteTotalMinutes: 0,
       housingType: 'whole',
     },
+    expectedTotal: 99,
     expectedTier: '完美',
   },
   {
@@ -70,7 +75,8 @@ const SCENARIOS: Scenario[] = [
       commuteTotalMinutes: 30,
       housingType: 'whole',
     },
-    expectedTier: '优秀',
+    expectedTotal: 77,
+    expectedTier: '良好',
   },
   {
     id: 9,
@@ -91,7 +97,8 @@ const SCENARIOS: Scenario[] = [
       commuteTotalMinutes: 20,
       housingType: 'whole',
     },
-    expectedTier: '优秀',
+    expectedTotal: 81,
+    expectedTier: '良好',
   },
   {
     id: 10,
@@ -112,7 +119,8 @@ const SCENARIOS: Scenario[] = [
       commuteTotalMinutes: 25,
       housingType: 'whole',
     },
-    expectedTier: '良好',
+    expectedTotal: 71,
+    expectedTier: '良好下半',
   },
   {
     id: 11,
@@ -133,7 +141,8 @@ const SCENARIOS: Scenario[] = [
       commuteTotalMinutes: 35,
       housingType: 'whole',
     },
-    expectedTier: '良好',
+    expectedTotal: 69,
+    expectedTier: '良好下半',
   },
   {
     id: 2,
@@ -154,7 +163,8 @@ const SCENARIOS: Scenario[] = [
       commuteTotalMinutes: 40,
       housingType: 'whole',
     },
-    expectedTier: '良好',
+    expectedTotal: 67,
+    expectedTier: '良好下半',
   },
   {
     id: 4,
@@ -175,7 +185,8 @@ const SCENARIOS: Scenario[] = [
       commuteTotalMinutes: 30,
       housingType: 'whole',
     },
-    expectedTier: '良好下半',
+    expectedTotal: 76,
+    expectedTier: '良好',
   },
   {
     id: 5,
@@ -196,7 +207,8 @@ const SCENARIOS: Scenario[] = [
       commuteTotalMinutes: 30,
       housingType: 'whole',
     },
-    expectedTier: '凑合',
+    expectedTotal: 33,
+    expectedTier: '不及格',
   },
   {
     id: 8,
@@ -217,11 +229,12 @@ const SCENARIOS: Scenario[] = [
       commuteTotalMinutes: 120,
       housingType: 'shared',
     },
+    expectedTotal: 0,
     expectedTier: '严重不及格',
   },
 ]
 
-describe('17 场景集成测试（P1 阶段：粗校验）', () => {
+describe('集成测试：9 场景总分锁定', () => {
   it('所有场景都能算出 0-100 的总分', () => {
     SCENARIOS.forEach((sc) => {
       const r = calculateScore(sc.input)
@@ -231,22 +244,27 @@ describe('17 场景集成测试（P1 阶段：粗校验）', () => {
     })
   })
 
+  it('每个场景总分 == expectedTotal ± 2（锁定调参基线）', () => {
+    SCENARIOS.forEach((sc) => {
+      const r = calculateScore(sc.input)
+      const diff = Math.abs(r.totalScore - sc.expectedTotal)
+      expect(
+        diff,
+        `场景 #${sc.id} ${sc.name}: 实际 ${r.totalScore}, 期望 ${sc.expectedTotal}, 偏差 ${diff}`,
+      ).toBeLessThanOrEqual(2)
+    })
+  })
+
   it('真·完美（场景 1）总分 ≥ 99（一线 cityBurden 80 无法清零，详见 ADR-D1）', () => {
     const sc = SCENARIOS.find((s) => s.id === 1)!
     const r = calculateScore(sc.input)
     expect(r.totalScore).toBeGreaterThanOrEqual(99)
   })
 
-  it('极端贫困（场景 8）总分 ≤ 40（应触发短板惩罚）', () => {
+  it('极端贫困（场景 8）总分 ≤ 5（应触发短板惩罚归零）', () => {
     const sc = SCENARIOS.find((s) => s.id === 8)!
     const r = calculateScore(sc.input)
-    expect(r.totalScore).toBeLessThanOrEqual(40)
-  })
-
-  it('良好（一线 4w 精致小户）> 凑合（便宜破房）', () => {
-    const good = calculateScore(SCENARIOS.find((s) => s.id === 12)!.input)
-    const bad = calculateScore(SCENARIOS.find((s) => s.id === 5)!.input)
-    expect(good.totalScore).toBeGreaterThan(bad.totalScore)
+    expect(r.totalScore).toBeLessThanOrEqual(5)
   })
 
   it('"贵的好房子"（#4） > "便宜的破房子"（#5）', () => {
@@ -255,13 +273,24 @@ describe('17 场景集成测试（P1 阶段：粗校验）', () => {
     // D9/D10 设计目标：两类用户分差打开
     expect(expensive.totalScore - cheap.totalScore).toBeGreaterThanOrEqual(10)
   })
+
+  it('档位单调性：完美 > 良好 > 良好下半 > 不及格 > 严重不及格', () => {
+    const perfect = calculateScore(SCENARIOS.find((s) => s.id === 1)!.input).totalScore
+    const good = calculateScore(SCENARIOS.find((s) => s.id === 9)!.input).totalScore
+    const lowerGood = calculateScore(SCENARIOS.find((s) => s.id === 10)!.input).totalScore
+    const fail = calculateScore(SCENARIOS.find((s) => s.id === 5)!.input).totalScore
+    const severeFail = calculateScore(SCENARIOS.find((s) => s.id === 8)!.input).totalScore
+    expect(perfect).toBeGreaterThan(good)
+    expect(good).toBeGreaterThan(lowerGood)
+    expect(lowerGood).toBeGreaterThan(fail)
+    expect(fail).toBeGreaterThan(severeFail)
+  })
 })
 
 // ============================================================
-// 打印当前各场景实际总分（供 P3 完成后回填 expected 用）
-// 取消下方 it.skip 改为 it 即可看到实际值
+// 打印当前各场景实际总分（调参时取消 .skip 用于看分布）
 // ============================================================
-describe.skip('17 场景实际总分打印（P3 后回填用）', () => {
+describe.skip('场景实际总分打印（调参用）', () => {
   it('print', () => {
     SCENARIOS.forEach((sc) => {
       const r = calculateScore(sc.input)

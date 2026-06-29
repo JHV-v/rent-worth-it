@@ -23,9 +23,11 @@ const SUNLIGHT_ICONS = [
   { icon: 'nights_stay', color: 'text-indigo-500' },
 ]
 const NOISE_OPTIONS = ['极其安静', '偶尔噪音', '隔音极差']
+// v1.6.3 D5/D12b：周边便利度拆成"商超 / 餐饮 / 医疗"3 个独立维度，每个 3 档
 const CONVENIENCE_OPTIONS = ['很方便', '一般', '不方便']
 const SPACE_OPTIONS = ['拥挤', '偏小', '刚好', '宽敞']
-const FLOOR_OPTIONS = ['电梯房', '低层步梯', '高层步梯']
+// v1.6.3 D12a：楼层 4 档（旧 3 档由 normalize 自动迁移）
+const FLOOR_OPTIONS = ['电梯房', '低层步梯(1-3)', '中层步梯(4-5)', '高层步梯(6+)']
 const APPLIANCE_OPTIONS = ['齐全且新', '刚好够用', '破旧老化', '纯毛坯房']
 const BATHROOM_OPTIONS = ['独立卫浴', '双人共卫', '多人共卫']
 const KITCHEN_OPTIONS = ['不做饭', '偶尔排队', '经常排队', '基本自由使用']
@@ -191,10 +193,26 @@ export default function RentForm({ initialData, onSubmit, errorMessage, onClearE
           />
 
           <TagSelectGroup
-            label="周边便利度"
+            label="商超便利"
             options={CONVENIENCE_OPTIONS}
-            value={form.activeOptions['周边便利度']?.[0]}
-            onChange={(v) => updateOption('周边便利度', v)}
+            value={form.activeOptions['商超便利']?.[0]}
+            onChange={(v) => updateOption('商超便利', v)}
+            variant="segmented"
+          />
+
+          <TagSelectGroup
+            label="餐饮便利"
+            options={CONVENIENCE_OPTIONS}
+            value={form.activeOptions['餐饮便利']?.[0]}
+            onChange={(v) => updateOption('餐饮便利', v)}
+            variant="segmented"
+          />
+
+          <TagSelectGroup
+            label="医疗便利"
+            options={CONVENIENCE_OPTIONS}
+            value={form.activeOptions['医疗便利']?.[0]}
+            onChange={(v) => updateOption('医疗便利', v)}
             variant="segmented"
           />
 

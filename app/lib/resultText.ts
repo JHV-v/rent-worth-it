@@ -82,16 +82,17 @@ export function beatPercentile(total: number): number {
 export function generatePros(score: ScoreResult, input: RawScoreInput): string[] {
   const pros: string[] = []
   const norm = normalizeInput(input)
+  const commute = score.commuteFeature.mainScore
+  const stress = score.stressFeature.mainScore
 
   if (norm.sunlight >= 4) pros.push('☀️ 采光很赞')
   if (norm.noise <= 1) pros.push('🔇 隔音超赞')
   if (score.rentRatio <= 25) pros.push('💰 租金友好')
-  if (score.commuteScore >= 70) pros.push('🚇 通勤轻松')
-  if (input.subway) pros.push('🚇 离地铁近')
-  if (norm.food >= 4) pros.push('🍜 吃喝方便')
+  if (commute >= 70) pros.push('🚇 通勤轻松')
+  if (norm.convenience >= 4) pros.push('🍜 吃喝方便')
   if (norm.space >= 4) pros.push('🏠 空间宽裕')
   if (norm.condition >= 4) pros.push('✨ 房况不错')
-  if (score.stress <= 20) pros.push('🧘 压力很小')
+  if (stress <= 20) pros.push('🧘 压力很小')
 
   if (pros.length === 0) pros.push('💪 至少有个遮风挡雨的地方')
   return pros.slice(0, 4)
@@ -100,18 +101,20 @@ export function generatePros(score: ScoreResult, input: RawScoreInput): string[]
 export function generateCons(score: ScoreResult, input: RawScoreInput): string[] {
   const cons: string[] = []
   const norm = normalizeInput(input)
+  const commute = score.commuteFeature.mainScore
+  const stress = score.stressFeature.mainScore
 
   if (norm.noise >= 4) cons.push('🚫 隔音较差')
   else if (norm.noise === 3) cons.push('🚫 隔音一般')
   if (norm.sunlight <= 2) cons.push('🌥️ 采光不足')
   if (score.rentRatio >= 40) cons.push('💸 租金压力大')
   else if (score.rentRatio >= 30) cons.push('💸 租金不轻松')
-  if (score.commuteScore <= 30) cons.push('🚌 通勤太远')
-  else if (score.commuteScore <= 50) cons.push('🚌 通勤偏远')
-  if (norm.food <= 2) cons.push('🥡 外卖选择少')
+  if (commute <= 30) cons.push('🚌 通勤太远')
+  else if (commute <= 50) cons.push('🚌 通勤偏远')
+  if (norm.convenience <= 2) cons.push('🥡 外卖选择少')
   if (norm.space <= 2) cons.push('🪑 空间局促')
   if (norm.condition <= 2) cons.push('🏚️ 装修老旧')
-  if (score.stress >= 50) cons.push('😰 压力山大')
+  if (stress >= 50) cons.push('😰 压力山大')
 
   if (cons.length === 0) cons.push('🤔 暂时没发现大问题')
   return cons.slice(0, 4)
@@ -124,6 +127,8 @@ export function generateCons(score: ScoreResult, input: RawScoreInput): string[]
 export function generateRoast(score: ScoreResult, input: RawScoreInput): string {
   const parts: string[] = []
   const norm = normalizeInput(input)
+  const commute = score.commuteFeature.mainScore
+  const stress = score.stressFeature.mainScore
 
   if (norm.housingType === 'shared') {
     if (norm.noise >= 4) {
@@ -145,11 +150,11 @@ export function generateRoast(score: ScoreResult, input: RawScoreInput): string 
     parts.push('租金友好到让人怀疑你是不是有内部关系')
   }
 
-  if (score.commuteScore <= 20) {
+  if (commute <= 20) {
     parts.push('通勤远到能在路上把一部电影看完')
-  } else if (score.commuteScore <= 40) {
+  } else if (commute <= 40) {
     parts.push('每天上下班的时间够你学会一门手艺了')
-  } else if (score.commuteScore >= 80) {
+  } else if (commute >= 80) {
     parts.push('通勤轻松到让人嫉妒')
   }
 
@@ -170,9 +175,9 @@ export function generateRoast(score: ScoreResult, input: RawScoreInput): string 
     parts.push('房况堪忧，住久了容易怀疑人生')
   }
 
-  if (score.stress >= 70) {
+  if (stress >= 70) {
     parts.push('综合压力爆表，建议认真考虑换个活法')
-  } else if (score.stress >= 50) {
+  } else if (stress >= 50) {
     parts.push('压力不小，但打工人不都这样嘛')
   }
 
@@ -202,6 +207,7 @@ export function generateRecommendations(score: ScoreResult): string[] {
 
 export function generateSummary(score: ScoreResult, input: RawScoreInput): string {
   const norm = normalizeInput(input)
+  const commute = score.commuteFeature.mainScore
   const parts: string[] = []
 
   if (score.totalScore >= 80) {
@@ -232,9 +238,9 @@ export function generateSummary(score: ScoreResult, input: RawScoreInput): strin
     parts.push('租金占比较高，经济上需要精打细算')
   }
 
-  if (score.commuteScore >= 70) {
+  if (commute >= 70) {
     parts.push('通勤轻松，省下的时间可以好好生活')
-  } else if (score.commuteScore <= 40) {
+  } else if (commute <= 40) {
     parts.push('通勤耗时较长，每天在路上消耗不少精力')
   }
 

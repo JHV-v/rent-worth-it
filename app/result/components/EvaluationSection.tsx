@@ -24,12 +24,12 @@ export default function EvaluationSection({ score, input }: EvaluationSectionPro
       <div className="grid grid-cols-1 md:grid-cols-2 gap-stack-lg">
         <div className="space-y-stack-md">
           <ScoreBar icon="payments" iconColor="text-tertiary-container/70" label="房租占收入" value={clampPct(score.rentRatio)} barFrom="from-tertiary-container/40" barTo="to-tertiary-container" />
-          <ScoreBar icon="commute" iconColor="text-primary/70" label="通勤效率" value={score.commuteScore} barFrom="from-primary/40" barTo="to-primary" />
-          <ScoreBar icon="king_bed" iconColor="text-emerald-600/70" label="居住舒适度" value={score.liveScore} barFrom="from-emerald-500/40" barTo="to-emerald-500" />
+          <ScoreBar icon="commute" iconColor="text-primary/70" label="通勤效率" value={score.commuteFeature.mainScore} barFrom="from-primary/40" barTo="to-primary" />
+          <ScoreBar icon="king_bed" iconColor="text-emerald-600/70" label="居住舒适度" value={score.liveFeature.mainScore} barFrom="from-emerald-500/40" barTo="to-emerald-500" />
         </div>
         <div className="space-y-stack-md">
-          <ScoreBar icon="restaurant" iconColor="text-orange-500/70" label="生活便利度" value={score.lifeScore} barFrom="from-orange-500/40" barTo="to-orange-500" />
-          <ScoreBar icon="self_improvement" iconColor="text-purple-600/70" label="压力指数" value={score.stress} barFrom="from-purple-500/40" barTo="to-purple-500" displayText={`${stressTier(score.stress)} (${score.stress}%)`} />
+          <ScoreBar icon="restaurant" iconColor="text-orange-500/70" label="生活便利度" value={score.lifeFeature.mainScore} barFrom="from-orange-500/40" barTo="to-orange-500" />
+          <ScoreBar icon="self_improvement" iconColor="text-purple-600/70" label="压力指数" value={score.stressFeature.mainScore} barFrom="from-purple-500/40" barTo="to-purple-500" displayText={`${stressTier(score.stressFeature.mainScore)} (${Math.round(score.stressFeature.mainScore)}%)`} />
           <div className="p-stack-md bg-surface-container-lowest border border-outline-variant/30 rounded-2xl flex items-center gap-stack-md">
             <span className="material-symbols-outlined text-primary/40 text-[28px] fill-1">verified</span>
             <div className="font-label-sm text-label-sm text-on-surface-variant leading-relaxed">{summary}</div>

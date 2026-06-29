@@ -52,9 +52,9 @@ export default function SharePoster({ score, input, qrCodeUrl }: SharePosterProp
           <div className="grid grid-cols-4 gap-3">
             {[
               ['租金压力', `${score.rentRatio}%`],
-              ['通勤体验', `${score.commuteScore}`],
-              ['居住体验', `${score.liveScore}`],
-              ['生活便利', `${score.lifeScore}`],
+              ['通勤体验', `${Math.round(score.commuteFeature.mainScore)}`],
+              ['居住体验', `${Math.round(score.liveFeature.mainScore)}`],
+              ['生活便利', `${Math.round(score.lifeFeature.mainScore)}`],
             ].map(([label, value]) => (
               <div key={label} className="rounded-3xl bg-white/85 p-4 text-center shadow-sm ring-1 ring-white/80">
                 <div className="text-xs font-bold text-on-surface-variant">{label}</div>

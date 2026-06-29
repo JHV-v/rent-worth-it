@@ -1,65 +1,101 @@
 import { describe, expect, it } from 'vitest'
-import { calcLifeScore } from './life'
-import { normalizeInput } from './normalize'
+import { calcLifeFeature } from './life'
+import type { ScoreInput } from './types'
 
 // ============================================================
-// life.test.ts —— 生活分加权
-// 权重：space 0.40, food 0.30, facilities 0.30  → 合计 1.00
-// subway 字段不再参与
+// life.test.ts —— v1.6.3 D12b 生活特征向量
+// 权重：space 0.30, convenience 0.25, dining 0.25, medical 0.20  → 合计 1.00
+//
+// P1 阶段 normalize 尚未输出 convenience/dining/medical，
+// 直接构造 ScoreInput 测试 calcLifeFeature 本身的算法。
 // ============================================================
 
-function ofPartial(partial: Record<string, unknown>): number {
-  return calcLifeScore(
-    normalizeInput({
-      space: 3,
-      food: 3,
-      facilities: 3,
-      ...partial,
-    }),
-  )
+function makeInput(overrides: Partial<ScoreInput>): ScoreInput {
+  return {
+    rent: 0,
+    income: 1,
+    sunlight: 3,
+    noise: 3,
+    space: 3,
+    condition: 3,
+    convenience: 3,
+    dining: 3,
+    medical: 3,
+    lifeDetails: 0,
+    housingType: 'whole',
+    cityType: 3,
+    utility: 3,
+    floor: 3,
+    bathroom: 3,
+    kitchen: 3,
+    commuteWeighted: 0,
+    commuteTotalMinutes: 0,
+    ...overrides,
+  }
 }
 
-describe('calcLifeScore - 单项满分', () => {
-  // space=5（100×0.4）+ food=3 (50×0.3) + facilities=3 (50×0.3) = 40+15+15 = 70
-  it('仅 space=5 → 70', () => {
-    expect(ofPartial({ space: 5 })).toBeCloseTo(70, 5)
-  })
-
-  // food=5: 50×0.4 + 100×0.3 + 50×0.3 = 20+30+15 = 65
-  it('仅 food=5 → 65', () => {
-    expect(ofPartial({ food: 5 })).toBeCloseTo(65, 5)
-  })
-
-  // facilities=5: 20+15+30 = 65
-  it('仅 facilities=5 → 65', () => {
-    expect(ofPartial({ facilities: 5 })).toBeCloseTo(65, 5)
-  })
-})
-
-describe('calcLifeScore - 全 0 / 全满', () => {
+describe('calcLifeFeature - 全 0 / 全 5', () => {
   it('全 1 → 0', () => {
-    expect(ofPartial({ space: 1, food: 1, facilities: 1 })).toBe(0)
+    const f = calcLifeFeature(
+      makeInput({ space: 1, convenience: 1, dining: 1, medical: 1 }),
+    )
+    expect(f.mainScore).toBe(0)
+    expect(f.strongest).toBeNull()
   })
 
   it('全 5 → 100', () => {
-    expect(ofPartial({ space: 5, food: 5, facilities: 5 })).toBe(100)
+    const f = calcLifeFeature(
+      makeInput({ space: 5, convenience: 5, dining: 5, medical: 5 }),
+    )
+    expect(f.mainScore).toBe(100)
+    expect(f.weakest).toBeNull()
   })
 
   it('全 3 → 50', () => {
-    expect(ofPartial({})).toBe(50)
+    const f = calcLifeFeature(makeInput({}))
+    expect(f.mainScore).toBe(50)
   })
 })
 
-describe('calcLifeScore - subway 不参与', () => {
-  it('subway=true vs false 不改变 lifeScore', () => {
-    const off = ofPartial({ subway: false })
-    const on = ofPartial({ subway: true })
-    expect(off).toBe(on)
+describe('calcLifeFeature - 权重分布', () => {
+  // space=1（→0），其他 5（→100）：
+  // 0×0.30 + 100×(0.25+0.25+0.20) = 70
+  it('space=1，其他满分 → 70（验证 space 权重 0.30）', () => {
+    const f = calcLifeFeature(
+      makeInput({ space: 1, convenience: 5, dining: 5, medical: 5 }),
+    )
+    expect(f.mainScore).toBeCloseTo(70, 5)
   })
 
-  it('全 5 + subway=true 不会超过 100', () => {
-    const v = ofPartial({ space: 5, food: 5, facilities: 5, subway: true })
-    expect(v).toBeLessThanOrEqual(100)
-    expect(v).toBe(100)
+  // medical=1（→0），其他满分：100×(0.30+0.25+0.25) = 80
+  it('medical=1，其他满分 → 80（验证 medical 权重 0.20）', () => {
+    const f = calcLifeFeature(
+      makeInput({ space: 5, convenience: 5, dining: 5, medical: 1 }),
+    )
+    expect(f.mainScore).toBeCloseTo(80, 5)
+  })
+})
+
+describe('calcLifeFeature - weakest / strongest', () => {
+  it('space 拉低 → weakest = space（贡献最低）', () => {
+    // space=1 (→0) 贡献 0；其他 4 (→75) 贡献分别 75×权重
+    const f = calcLifeFeature(
+      makeInput({ space: 1, convenience: 4, dining: 4, medical: 4 }),
+    )
+    expect(f.weakest?.key).toBe('space')
+  })
+
+  it('space 拉高 → strongest = space（权重最大）', () => {
+    // space=5 (→100) 贡献 30；其他 3 (→50) 贡献 12.5/12.5/10
+    const f = calcLifeFeature(makeInput({ space: 5 }))
+    expect(f.strongest?.key).toBe('space')
+  })
+
+  it('全 3 分（默认中性）→ 50 分', () => {
+    // convenience/dining/medical 必填，全 3 对应 scaleFromFive(3)=50
+    const f = calcLifeFeature(
+      makeInput({ space: 3, convenience: 3, dining: 3, medical: 3 }),
+    )
+    expect(f.mainScore).toBe(50)
   })
 })

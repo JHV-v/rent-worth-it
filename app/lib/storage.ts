@@ -1,7 +1,8 @@
 import type { RentFormData } from './adapter'
 
 // 当 RentFormData 结构变化时，把 VERSION 升一位，旧数据会被自动丢弃
-const STORAGE_VERSION = 2
+// v1.6.3 升 3：新增 lifeDetails 多选 / contractTerm 字典扩展 / 楼层 4 档
+const STORAGE_VERSION = 3
 const STORAGE_KEY = 'rentFormData'
 
 type StoredPayload = {

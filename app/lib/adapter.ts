@@ -82,23 +82,16 @@ function migrateCityType(tag: string | undefined): string | undefined {
   return CITY_TYPE_MIGRATION[tag] ?? tag
 }
 
-function hasSubwayAccess(
-  commuteTimes: Record<string, string> | undefined,
-  convenienceTags: string[] | undefined,
-): boolean {
-  if (commuteTimes) {
-    const publicTransit = Number(commuteTimes['公共交通'])
-    if (Number.isFinite(publicTransit) && publicTransit > 0) return true
-  }
-  const tag = pickFirstTag(convenienceTags)
-  return tag === '很方便'
-}
-
 export function mapFormDataToScoreInput(form: RentFormData): RawScoreInput {
   const options = form.activeOptions ?? {}
-  const convenience = options['周边便利度'] ?? options['配套便利']
-  const convenienceTag = pickFirstTag(convenience)
-  const applianceTag = pickFirstTag(options['家电配置'])
+
+  // v1.6.3：表单已拆成"商超便利 / 餐饮便利 / 医疗便利"3 个独立字段
+  const convenienceTag = pickFirstTag(options['商超便利'])
+  const diningTag = pickFirstTag(options['餐饮便利'])
+  const medicalTag = pickFirstTag(options['医疗便利'])
+
+  // v1.6.3：生活小细节多选数量进幸福指数
+  const lifeDetailsTags = options['生活小细节']
 
   return {
     rent: form.rent,
@@ -109,9 +102,11 @@ export function mapFormDataToScoreInput(form: RentFormData): RawScoreInput {
     noise: pickFirstTag(options['隔音水平']),
     space: pickFirstTag(options['空间感觉']),
     condition: pickFirstTag(options['家电配置']),
-    subway: hasSubwayAccess(form.commuteTimes, convenience),
-    food: convenienceTag?.length ? mapConvenience(convenienceTag) : undefined,
-    facilities: applianceTag?.length ? mapAppliance(applianceTag) : undefined,
+    convenience: convenienceTag ? mapConvenience(convenienceTag) : undefined,
+    dining: diningTag ? mapConvenience(diningTag) : undefined,
+    medical: medicalTag ? mapConvenience(medicalTag) : undefined,
+    contractTerm: form.contractTerm,
+    lifeDetails: lifeDetailsTags ?? [],
     housingType: detectHousingType(options['租赁类型']),
     cityType: migrateCityType(pickFirstTag(options['城市类型'])),
     utility: pickFirstTag(options['水电收费']),
@@ -128,18 +123,6 @@ const CONVENIENCE_MAP: Record<string, number> = {
   不方便: 1,
 }
 
-const APPLIANCE_MAP: Record<string, number> = {
-  齐全且新: 5,
-  较新: 4,
-  刚好够用: 3,
-  破旧老化: 2,
-  纯毛坯房: 1,
-}
-
 function mapConvenience(tag: string | undefined): number {
   return tag != null && CONVENIENCE_MAP[tag] != null ? CONVENIENCE_MAP[tag] : 3
-}
-
-function mapAppliance(tag: string | undefined): number {
-  return tag != null && APPLIANCE_MAP[tag] != null ? APPLIANCE_MAP[tag] : 3
 }

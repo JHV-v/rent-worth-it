@@ -75,37 +75,55 @@ describe('migrateCityType（通过 adapter 输出验证）', () => {
   })
 })
 
-describe('hasSubwayAccess 边界（通过 adapter 输出验证）', () => {
-  it('公共交通时长>0 时 subway=true', () => {
+// v1.6.3 P5：subway 字段已从 RawScoreInput 移除（D1 之后地铁信号不再单独参与算法），
+// 原 hasSubwayAccess 边界测试随之删除。
+
+// ============================================================
+// v1.6.3 新增字段映射
+// ============================================================
+
+describe('v1.6.3 - 商超 / 餐饮 / 医疗 3 个独立便利字段', () => {
+  it('3 个字段独立设置 → 分别映射到 convenience / dining / medical', () => {
     const form = buildForm('整租一居', '一线')
-    form.commuteTimes = { 公共交通: '30' }
-    expect(mapFormDataToScoreInput(form).subway).toBe(true)
+    form.activeOptions['商超便利'] = ['很方便']
+    form.activeOptions['餐饮便利'] = ['一般']
+    form.activeOptions['医疗便利'] = ['不方便']
+    const r = mapFormDataToScoreInput(form)
+    expect(r.convenience).toBe(5) // 很方便
+    expect(r.dining).toBe(3) // 一般
+    expect(r.medical).toBe(1) // 不方便
   })
 
-  it('公共交通时长=0 时不计为有地铁', () => {
+  it('未选 → 三个字段均为 undefined（normalize 走默认 3）', () => {
     const form = buildForm('整租一居', '一线')
-    form.commuteTimes = { 公共交通: '0' }
-    expect(mapFormDataToScoreInput(form).subway).toBe(false)
+    const r = mapFormDataToScoreInput(form)
+    expect(r.convenience).toBeUndefined()
+    expect(r.dining).toBeUndefined()
+    expect(r.medical).toBeUndefined()
+  })
+})
+
+describe('v1.6.3 - 生活小细节 → lifeDetails 数组传递', () => {
+  it('勾选 3 项 → lifeDetails 数组长度 3', () => {
+    const form = buildForm('整租一居', '一线')
+    form.activeOptions['生活小细节'] = ['宠物友好', '晾晒方便', '有阳台']
+    const r = mapFormDataToScoreInput(form)
+    expect(Array.isArray(r.lifeDetails)).toBe(true)
+    expect(r.lifeDetails?.length).toBe(3)
   })
 
-  it('没有公共交通时长但便利度=很方便 也算有地铁', () => {
+  it('未选 → lifeDetails 为空数组', () => {
     const form = buildForm('整租一居', '一线')
-    form.commuteTimes = {}
-    form.activeOptions['周边便利度'] = ['很方便']
-    expect(mapFormDataToScoreInput(form).subway).toBe(true)
+    const r = mapFormDataToScoreInput(form)
+    expect(r.lifeDetails).toEqual([])
   })
+})
 
-  it('既无公共交通时长也无便利度=很方便 时 subway=false', () => {
+describe('v1.6.3 - contractTerm 直传', () => {
+  it('"1年" 中文标签直传给 normalize', () => {
     const form = buildForm('整租一居', '一线')
-    form.commuteTimes = {}
-    form.activeOptions['周边便利度'] = ['一般']
-    expect(mapFormDataToScoreInput(form).subway).toBe(false)
-  })
-
-  it('commuteTimes 为空对象 + 没选便利度时 subway=false', () => {
-    const form = buildForm('整租一居', '一线')
-    form.commuteTimes = {}
-    delete form.activeOptions['周边便利度']
-    expect(mapFormDataToScoreInput(form).subway).toBe(false)
+    form.contractTerm = '1年'
+    const r = mapFormDataToScoreInput(form)
+    expect(r.contractTerm).toBe('1年')
   })
 })

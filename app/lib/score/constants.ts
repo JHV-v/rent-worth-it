@@ -1,5 +1,11 @@
 // ============================================================
 // v1.6.0 常量
+// v1.6.3：特征推理架构常量
+//   - 替换：HOUSING_WEIGHTS / LIFE_WEIGHTS / TAG_DICTIONARY.floor / TAG_DICTIONARY.space
+//   - 新增：STRESS_WEIGHTS / HAPPINESS_WEIGHTS / VALUE_WEIGHTS / COST_WEIGHTS
+//          CITY_BURDEN / CITY_BENEFIT / CONTRACT_BENEFIT / CONTRACT_TERM_DICT
+//          RENT_DECAY / COMMUTE_BASE_DECAY / SHORTFALL_THRESHOLD / SHORTFALL_PENALTY_FACTOR
+//          VALUE_DOMINANCE / COST_INFLUENCE / FLOOR_TAG_MIGRATION / getCityBurden / getCityBenefit
 // ============================================================
 
 export const DEFAULT_SCORE = 3 as const
@@ -32,13 +38,11 @@ export const TAG_DICTIONARY = {
     非常吵: 5,
   } as Record<string, number>,
 
-  // 空间感（正向）
+  // 空间感（正向，v1.6.3 D5：4 档，无中性 3 档；旧 sessionStorage 传入 3 走 scaleFromFive 得 50）
   space: {
     宽敞: 5,
     刚好: 4,
-    适中: 4,
     偏小: 2,
-    狭小: 2,
     拥挤: 1,
   } as Record<string, number>,
 
@@ -67,10 +71,12 @@ export const TAG_DICTIONARY = {
     商水商电: 2,
   } as Record<string, number>,
 
+  // 楼层（v1.6.3 D12a：4 档替换旧 3 档）
   floor: {
-    电梯房: 5,
-    低层步梯: 3,
-    高层步梯: 1,
+    '电梯房': 5,
+    '低层步梯(1-3)': 4,
+    '中层步梯(4-5)': 2,
+    '高层步梯(6+)': 1,
   } as Record<string, number>,
 
   bathroom: {
@@ -87,45 +93,63 @@ export const TAG_DICTIONARY = {
   } as Record<string, number>,
 } as const
 
-// 城市等级修正系数：集中管理 rent / bonus / stress 三处差异化数值
-// key 是 cityType 取值（1-5），高线城市租金更包容、生活体验加成更高、但压力也略增
-export const CITY_MODIFIER: Record<
-  5 | 4 | 3 | 2 | 1,
-  { rent: number; bonus: number; stress: number }
-> = {
-  5: { rent: 8, bonus: 5, stress: 5 }, // 一线
-  4: { rent: 4, bonus: 3, stress: 2 }, // 新一线
-  3: { rent: 0, bonus: 0, stress: 0 }, // 二线
-  2: { rent: -4, bonus: -3, stress: -2 }, // 三线及以下
-  1: { rent: -6, bonus: -3, stress: -3 }, // 兜底
+// 旧楼层标签兼容迁移（防御旧 sessionStorage / 旧分享链接）
+// 在 normalize 层先做迁移：拿到字符串 → 先过 FLOOR_TAG_MIGRATION → 再过 TAG_DICTIONARY.floor
+export const FLOOR_TAG_MIGRATION: Record<string, string> = {
+  '低层步梯': '低层步梯(1-3)',
+  '高层步梯': '高层步梯(6+)',
 }
 
-// 总分权重：四维加权 − 压力轻度拉低
-// v1.6.0：通勤痛苦权重 0.20 → 0.25；居住 0.30 → 0.25
-export const WEIGHTS = {
-  rent: 0.3,
-  commute: 0.25,
-  live: 0.25,
-  life: 0.2,
-  stress: 0.1,
-} as const
+// 城市等级修正系数：v1.6.3 D1 后只保留 rent 字段；bonus/stress 由 CITY_BENEFIT / CITY_BURDEN 接管
+export const CITY_MODIFIER: Record<5 | 4 | 3 | 2 | 1, { rent: number }> = {
+  5: { rent: 8 }, // 一线
+  4: { rent: 4 }, // 新一线
+  3: { rent: 0 }, // 二线
+  2: { rent: -4 }, // 三线及以下
+  1: { rent: -6 }, // 兜底
+}
 
-// 房租分段：基准 + 偏移
+// 压力指数里的城市坏处档（D8）
+export const CITY_BURDEN: Record<number, number> = {
+  5: 80,
+  4: 50,
+  3: 20,
+  2: 0,
+  1: 0,
+}
+
+// 幸福指数里的城市好处档（D7）
+export const CITY_BENEFIT: Record<number, number> = {
+  5: 100,
+  4: 67,
+  3: 33,
+  2: 0,
+  1: 0,
+}
+
+// 合同期幸福映射（D6/D7）
+// 索引：1=半年 / 2=1年 / 3=2年+；与 CONTRACT_TERM_DICT 对齐
+export const CONTRACT_BENEFIT: Record<number, number> = {
+  1: 0, // 半年 = 无加成
+  2: 50, // 1 年
+  3: 100, // 2 年+
+}
+
+// 合同期标签字典（normalize 用，把"半年/1年/2年+"中文字符串映射到 1/2/3）
+export const CONTRACT_TERM_DICT: Record<string, number> = {
+  '半年': 1,
+  '1年': 2,
+  '2年+': 3,
+}
+
+// 房租基准
 export const RENT_BASELINE_WHOLE = 30
 export const RENT_BASELINE_SHARED = 35
 
-export const RENT_SEGMENTS: ReadonlyArray<{ offset: number; score: number }> = [
-  { offset: -10, score: 100 },
-  { offset: -5, score: 95 },
-  { offset: 0, score: 85 },
-  { offset: 5, score: 70 },
-  { offset: 10, score: 55 },
-  { offset: 20, score: 30 },
-  { offset: 30, score: 15 },
-  { offset: Infinity, score: 0 },
-]
+/** v1.6.3 D12c：高占比段 exp 衰减系数 */
+export const RENT_DECAY = 15
 
-// 通勤疲惫度系数（按出行方式）
+// 通勤疲惫度系数（按出行方式，adapter 用）
 export const COMMUTE_FATIGUE_COEFFICIENT: Record<string, number> = {
   '步行': 1.0,
   '骑行': 0.95,
@@ -133,43 +157,99 @@ export const COMMUTE_FATIGUE_COEFFICIENT: Record<string, number> = {
   '驾车': 1.1,
 }
 
-// 通勤总时长加成/惩罚（按"总实际通勤时长"分段）
+// 通勤总时长加成/惩罚（v1.6.3 D12d：对称 bonus +10/0/-10/-20）
 export const COMMUTE_TOTAL_BONUS = {
-  short: { max: 30, bonus: 5 },
+  short: { max: 30, bonus: 10 }, // v1.6.3：+5 → +10（对称化）
   normal: { max: 60, bonus: 0 },
   long: { max: 90, bonus: -10 },
-  extreme: { max: Infinity, bonus: -25 },
+  extreme: { max: Infinity, bonus: -20 }, // v1.6.3：-25 → -20（对称化）
 } as const
+
+/** v1.6.3 D12d：exp 衰减系数 60 → 100（更平缓，短通勤获得合理高分） */
+export const COMMUTE_BASE_DECAY = 100
 
 // 拖拽位置权重（adapter 计算疲惫度时使用）
 export const COMMUTE_POSITION_WEIGHTS: ReadonlyArray<number> = [1.0, 0.7, 0.4, 0.2]
 
-// 居住分内部权重（合计 1.00）
+// 居住分内部权重（v1.6.3 D12a 候选 C 温和折中，合计 1.00）
 export const HOUSING_WEIGHTS = {
-  sunlight: 0.22,
-  noise: 0.2,
+  sunlight: 0.2, // 旧 0.22
+  noise: 0.18, // 旧 0.20
   bathroom: 0.16,
   condition: 0.15,
-  kitchen: 0.12,
+  kitchen: 0.13, // 旧 0.12
   floor: 0.1,
-  utility: 0.05,
+  utility: 0.08, // 旧 0.05
 } as const
 
-// 生活分内部权重（合计 1.00）
+// 生活分内部权重（v1.6.3 D5/D12b：4 子项 space/convenience/dining/medical，合计 1.00）
 export const LIFE_WEIGHTS = {
-  space: 0.4,
-  food: 0.3,
-  facilities: 0.3,
+  space: 0.3, // 旧 0.40
+  convenience: 0.25, // 旧 food 0.30 → 重命名 + 调权
+  dining: 0.25, // 新增
+  medical: 0.2, // 新增
 } as const
 
-export function getCityModifier(cityType: number): {
-  rent: number
-  bonus: number
-  stress: number
-} {
+// 压力指数内部权重（v1.6.3 D8 候选 B，合计 1.00）
+export const STRESS_WEIGHTS = {
+  rentBurden: 0.3,
+  commuteBurden: 0.3,
+  incomeBurden: 0.15,
+  sharedBurden: 0.1,
+  cityBurden: 0.15,
+} as const
+
+// 幸福指数内部权重（v1.6.3 D7 候选 2 三足鼎立，合计 1.00）
+export const HAPPINESS_WEIGHTS = {
+  lifeDetails: 0.4,
+  contractBenefit: 0.3,
+  cityBenefit: 0.3,
+} as const
+
+// 价值 / 成本外部权重（v1.6.3 D10 修订：价值内 0.45/0.35/0.20，让幸福传导 19.5 → 13.0）
+export const VALUE_WEIGHTS = {
+  live: 0.45,
+  life: 0.35,
+  happiness: 0.2,
+} as const
+
+export const COST_WEIGHTS = {
+  rent: 0.4,
+  commute: 0.3,
+  stress: 0.3,
+} as const
+
+// 总分公式：基础分 = 价值 × 0.65 + (100 - 成本) × 0.35（D10）
+export const VALUE_DOMINANCE = 0.65
+export const COST_INFLUENCE = 0.35
+
+// 短板惩罚（D10 第 4 步）：客观维度 < 30 时按 (30 - score) × 0.3 扣分
+export const SHORTFALL_THRESHOLD = 30
+export const SHORTFALL_PENALTY_FACTOR = 0.3
+
+// ============================================================
+// 兜底工具函数
+// ============================================================
+
+// 城市修正 rent
+export function getCityModifier(cityType: number): { rent: number } {
   if (cityType >= 5) return CITY_MODIFIER[5]
   if (cityType >= 4) return CITY_MODIFIER[4]
   if (cityType >= 3) return CITY_MODIFIER[3]
   if (cityType >= 2) return CITY_MODIFIER[2]
   return CITY_MODIFIER[1]
+}
+
+// 压力侧城市坏处（D8）
+export function getCityBurden(cityType: number): number {
+  const key =
+    cityType >= 5 ? 5 : cityType >= 4 ? 4 : cityType >= 3 ? 3 : cityType >= 2 ? 2 : 1
+  return CITY_BURDEN[key]
+}
+
+// 幸福侧城市好处（D7）
+export function getCityBenefit(cityType: number): number {
+  const key =
+    cityType >= 5 ? 5 : cityType >= 4 ? 4 : cityType >= 3 ? 3 : cityType >= 2 ? 2 : 1
+  return CITY_BENEFIT[key]
 }
